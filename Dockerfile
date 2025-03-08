@@ -1,40 +1,18 @@
-ARG ALPINE_VERSION='3.18'
-ARG PYTHON_VERSION='3.10'
+ARG BASE_IMG='registry.altlinux.org/alt/alt:p11'
 
-# TODO Altlinux
-FROM python:${PYTHON_VERSION}-alpine${ALPINE_VERSION} AS salt-base
-
-ARG SALT_VERSION='3006.7'
-
-ARG BUILD_DEPS="gcc g++ autoconf make libffi-dev libgit2-dev"
+FROM "$BASE_IMG" AS salt-master
+LABEL name='salt-box-salt-master'
+LABEL version='2.0'
 
 RUN \
-  --mount=type=cache,target=/var/cache/apk/,sharing=locked \
-  apk add binutils libgit2 libffi openssl-dev
-
-RUN \
-  --mount=type=cache,target=/var/cache/apk/,sharing=locked \
-  --mount=type=cache,target=/root/.cache/pip/ \
+  --mount=type=cache,target=/var/cache/apt,sharing=locked \
+  --mount=type=cache,target=/var/lib/apt/lists,sharing=locked \
 <<EOF
 set -e
-echo 'cython<3' > /root/constraint.txt
-apk add $BUILD_DEPS
-PIP_CONSTRAINT=/root/constraint.txt USE_STATIC_REQUIREMENTS=1 \
-    pip3 install --no-build-isolation \
-    pyOpenSSL "salt==${SALT_VERSION}" 'pygit2<1.12'
-rm /root/constraint.txt
-apk del $BUILD_DEPS
+mkdir --parents /var/cache/apt/archives/partial/ /var/lib/apt/lists/partial/
+apt-get update
+apt-get install --yes gettext python3-module-pygit2 salt-master
 EOF
-
-FROM salt-base AS salt-master
-LABEL name='salt-box-salt-master'
-LABEL version='1.1'
-RUN --mount=type=cache,target=/var/cache/apk/,sharing=locked \
-  apk add gettext-envsubst
-RUN \
-  --mount=type=bind,target=/mnt/,readwrite \
-  --mount=type=cache,target=/root/.cache/pip/ \
-  pip3 install /mnt/
 
 COPY docker/config/master_id.conf /etc/salt/master.d/
 COPY docker/templates/ /root/templates/
@@ -51,8 +29,19 @@ CMD ["salt-master"]
 EXPOSE 4505 4506 8000
 
 
-FROM salt-base AS salt-minion
+FROM "$BASE_IMG" AS salt-minion
 LABEL name='salt-box-salt-minion'
-LABEL version='0.5'
+LABEL version='2.0'
+
+RUN \
+  --mount=type=cache,target=/var/cache/apt,sharing=locked \
+  --mount=type=cache,target=/var/lib/apt/lists,sharing=locked \
+<<EOF
+set -e
+mkdir --parents /var/cache/apt/archives/partial/ /var/lib/apt/lists/partial/
+apt-get update
+apt-get install --yes salt-minion
+EOF
+
 COPY docker/minion/minion.yaml /etc/salt/minion.d/minion.conf
-CMD ["/usr/local/bin/salt-minion"]
+CMD ["/usr/bin/salt-minion"]
