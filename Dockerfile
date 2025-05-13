@@ -36,7 +36,7 @@ EOF
 
 FROM salt-base AS salt-master-base
 RUN --mount=type=cache,target=/var/cache/apk/,sharing=locked \
-  apk add gettext-envsubst openssh-keygen gnupg
+  apk add gettext-envsubst openssh-client openssh-keygen rsync gnupg
 ARG SUPERVISORD_VERSION='4.2.5'
 RUN \
   --mount=type=bind,target=/mnt/,readwrite \
@@ -64,7 +64,7 @@ EXPOSE 4505 4506 8000
 
 FROM salt-master-base AS salt-master
 LABEL name='saltbox-salt-master'
-LABEL version='3.0'
+LABEL version='3.1'
 LABEL release='1'
 RUN \
   --mount=type=bind,target=/mnt/,readwrite \
@@ -75,7 +75,7 @@ RUN \
 
 FROM salt-master-base AS salt-master-dev
 LABEL name='saltbox-salt-master-dev'
-LABEL version='2.0'
+LABEL version='2.1'
 LABEL release='1'
 ENV SALTBOX_BRIDGE_SRC_PATH=/root/saltbox_bridge/
 ENV SALT_BOX_DEV_MODE=1

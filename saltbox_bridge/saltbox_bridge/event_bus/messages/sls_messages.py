@@ -9,6 +9,7 @@ class SlsRepo(BaseModel):
     local_path: str
     name: str
     branch: str
+    root: str
 
 
 class ListSlsReposMessage(BaseMessage):

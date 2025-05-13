@@ -91,6 +91,7 @@ def start(
     handler.setLevel(log_level)
     handler.setFormatter(formatter)
     root_logger = logging.getLogger()
+    root_logger.handlers = []
     root_logger.addHandler(handler)
 
     asyncio.run(

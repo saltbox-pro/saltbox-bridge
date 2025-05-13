@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from pydantic import DirectoryPath, Field
+from pydantic import DirectoryPath, Field, FilePath
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 from saltbox_bridge.utils.types import SslCertReqs
@@ -40,6 +40,21 @@ class Settings(BaseSettings):
     expire: int | None = Field(alias='EXPIRE', default=604800)
     max_count_of_gather_minions: int = Field(alias='MAX_COUNT_OF_GATHER_MINIONS', default=100)
 
+    # Gitfs
+    gitfs_server: str
+    gitfs_port: int = 22
+    gitfs_user: str = 'git'
+    gitfs_privkey: FilePath = var_dir / 'ssh/saltbox_ed25519'
+    gitfs_pubkey: FilePath = var_dir / 'ssh/saltbox_ed25519.pub'
+    sshfs_sync_on: bool = True
+    sshfs_server: str | None = None
+    sshfs_port: int = 22
+    sshfs_user: str | None = None
+    sshfs_privkey: FilePath = gitfs_privkey
+    sshfs_pubkey: FilePath = gitfs_pubkey
+    sshfs_source: Path = Path('/srv/sshfs/')
+    sshfs_destination: Path = Path('/srv/sshfs/')
+
     # GPG
     gpg_key_length: int = 4096
     gog_key_name_real: str = 'Saltbox master - {master}'
@@ -47,6 +62,7 @@ class Settings(BaseSettings):
     gpg_key_comment: str = 'This is a certificate for saltbox services'
 
     model_config = SettingsConfigDict(env_file='/etc/salt/saltbox.conf')
+
 
     @property
     def redis_protocol(self) -> str:

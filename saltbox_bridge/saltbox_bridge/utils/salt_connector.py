@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import json
 import logging
-from typing import cast
+from typing import Any, cast
 
 from redis.asyncio import Redis
 from salt.client import Caller
@@ -20,6 +20,25 @@ def get_salt_caller() -> Caller:
     opts = minion_config('/etc/salt/minion')
     opts['file_client'] = 'local'
     return Caller(mopts=opts)
+
+
+def get_state_apply_error(data: list[str] | dict[str, dict[str, Any]]) -> list[str]:
+    """
+    Proccess return dict from salt state.apply function, return errors
+    """
+    # TODO Search for standard salt function
+    # TODO Except potential errors while getting fileds
+    if isinstance(data, list):
+        return ['\n'.join(data)]
+    elif isinstance(data, dict):
+        errors = []
+        for key, val in data.items():
+            if not val['result']:
+                comment = val.get('comment', 'COMMENT IS MISSING')
+                errors.append(f'{key}: {comment}')
+        return errors
+    else:
+        raise RuntimeError(f'Unexpected return type {type(data)}')
 
 
 class SaltConnector:

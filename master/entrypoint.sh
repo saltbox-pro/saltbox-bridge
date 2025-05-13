@@ -8,7 +8,7 @@ error() {
   exit 1
 }
 
-ssh_keyfile='/root/.ssh/saltbox_ed25519'
+ssh_keyfile='/var/lib/saltbox-bridge/ssh/saltbox_ed25519'
 
 # TODO Create with highstate instead
 if [ ! -f "$ssh_keyfile" ]; then

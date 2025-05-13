@@ -1,0 +1,9 @@
+{%- set var_dir = pillar.get('var_dir', '/var/lib/saltbox-bridge/') %}
+Host saltbox-sshfs
+  User '{{ pillar.get('sshfs_user', 'saltbox') }}'
+  Hostname '{{ pillar.get('sshfs_server', 'sshfs') }}'
+  PasswordAuthentication no
+  StrictHostKeyChecking no
+  Port {{ pillar.get('sshfs_port', 1022) }}
+  IdentityFile '{{ pillar.get('sshfs_privkey', var_dir + '/ssh/saltbox_ed25519') }}'
+  UserKnownHostsFile '{{ var_dir + '/ssh/known_hosts' }}'
