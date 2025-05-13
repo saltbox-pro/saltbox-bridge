@@ -7,9 +7,9 @@ from typing import Any
 from salt.utils import json
 
 from saltbox_bridge.config import SETTINGS
+from saltbox_bridge.event_bus.messages.minion_messages import GrainsOutMessage
 from saltbox_bridge.exceptions import StopProcessing
 from saltbox_bridge.salt_handlers.base_handler import BaseMessageHandler
-from saltbox_bridge.schemas.out_schemas import GrainsOutMessage
 
 LOGGER = logging.getLogger(__name__)
 

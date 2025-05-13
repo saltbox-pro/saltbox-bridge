@@ -83,7 +83,6 @@ REDIS_SSL_CA_CERTS="/etc/salt/ssl/redis-ca.crt"
 
 # Time to live for job returns and grains (sec)
 EXPIRE=604800
-MASTER_SECRET="MASTER_SECRET"
 ```
 
 Use `./make_master_id.sh` helper script to create id with hostname and timestamp

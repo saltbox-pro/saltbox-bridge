@@ -36,7 +36,7 @@ EOF
 
 FROM salt-base AS salt-master-base
 RUN --mount=type=cache,target=/var/cache/apk/,sharing=locked \
-  apk add gettext-envsubst openssh-keygen
+  apk add gettext-envsubst openssh-keygen gnupg
 ARG SUPERVISORD_VERSION='4.2.5'
 RUN \
   --mount=type=bind,target=/mnt/,readwrite \
@@ -44,6 +44,7 @@ RUN \
   pip3 install "supervisor==${SUPERVISORD_VERSION}"
 # To avoid error messag on cleanup keys
 RUN mkdir --parents /var/cache/salt/master/
+RUN mkdir --parents /var/lib/saltbox-bridge/
 COPY --chmod=755 master/entrypoint.sh /usr/local/bin/
 COPY master/supervisord.conf /etc/
 COPY master/config/master_id.conf /etc/salt/master.d/
@@ -54,7 +55,6 @@ COPY runners /srv/salt_extmod/runners/
 COPY pillar /srv/salt_extmod/pillar/
 ENV REDIS_USERNAME=redis
 ENV REDIS_PASSWORD_FILE=
-ENV MASTER_SECRET_FILE=
 ENV SALT_MASTER_LOG_LEVEL=warning
 ENV SALT_MINION_LOG_LEVEL=warning
 ENTRYPOINT ["/usr/local/bin/entrypoint.sh"]

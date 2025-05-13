@@ -5,9 +5,8 @@ import ssl
 from collections.abc import Callable
 
 from faststream import FastStream
+from faststream.broker.types import BrokerMiddleware
 from faststream.redis import RedisBroker, RedisRouter
-from faststream.redis.publisher.asyncapi import AsyncAPIPublisher
-from faststream.redis.subscriber.asyncapi import AsyncAPISubscriber
 from faststream.security import SASLPlaintext
 
 from saltbox_bridge.config import SETTINGS, FaststreamRedisConf
@@ -15,6 +14,7 @@ from saltbox_bridge.config import SETTINGS, FaststreamRedisConf
 
 def get_faststream_broker(
     redis_conf: FaststreamRedisConf | None = None,
+    middlewares: list[BrokerMiddleware] | None = None,
 ) -> RedisBroker:
     if redis_conf is None:
         redis_conf = SETTINGS.faststream_redis_conf
@@ -34,42 +34,16 @@ def get_faststream_broker(
     else:
         security = SASLPlaintext(username=redis_conf.username, password=redis_conf.password)
 
-    return RedisBroker(url=redis_conf.url, security=security)
-
-
-def get_faststream_subscriber(
-    channel: str,
-    redis_conf: FaststreamRedisConf | None = None,
-    broker: RedisBroker | None = None,
-) -> AsyncAPISubscriber:
-    if not broker:
-        if not redis_conf:
-            msg = 'Redis broker not configured'
-            raise RuntimeError(msg)
-
-        broker: RedisBroker = get_faststream_broker(redis_conf=redis_conf)
-
-    return broker.subscriber(channel)
-
-
-def get_faststream_publisher(
-    channel: str,
-    redis_conf: FaststreamRedisConf | None = None,
-    broker: RedisBroker | None = None,
-) -> AsyncAPIPublisher:
-    if not broker:
-        if not redis_conf:
-            msg = 'Redis broker not configured'
-            raise RuntimeError(msg)
-
-        broker: RedisBroker = get_faststream_broker(redis_conf=redis_conf)
-
-    return broker.publisher(channel)
+    if middlewares:
+        return RedisBroker(url=redis_conf.url, security=security, middlewares=middlewares)
+    else:
+        return RedisBroker(url=redis_conf.url, security=security)
 
 
 def get_faststream_app(
     routers: list[RedisRouter],
     redis_conf: FaststreamRedisConf | None = None,
+    middlewares: list[BrokerMiddleware] | None = None,
     broker: RedisBroker | None = None,
     lifespan: Callable | None = None,
 ) -> FastStream:
@@ -78,7 +52,7 @@ def get_faststream_app(
             msg = 'Redis broker not configured'
             raise RuntimeError(msg)
 
-        broker: RedisBroker = get_faststream_broker(redis_conf=redis_conf)
+        broker = get_faststream_broker(redis_conf=redis_conf, middlewares=middlewares)
 
     for router in routers:
         broker.include_router(router)

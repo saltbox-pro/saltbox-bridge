@@ -8,8 +8,7 @@ import redis.asyncio as redis
 from faststream.redis import RedisBroker
 from salt.client import LocalClient
 
-from saltbox_bridge.config import SETTINGS
-from saltbox_bridge.schemas.base_schemas import BaseOutMessage
+from saltbox_bridge.event_bus.messages.base_messages import BaseMessage
 
 
 class BaseMessageHandler(abc.ABC):
@@ -30,10 +29,8 @@ class BaseMessageHandler(abc.ABC):
     def salt_client(self) -> LocalClient:
         return LocalClient(c_path=None, mopts=self.salt_opts, auto_reconnect=True)  # type: ignore
 
-    async def send_message(self, message: BaseOutMessage, message_tag: str) -> None:
+    async def send_message(self, message: BaseMessage, message_tag: str) -> None:
         async with self.broker as br:
-            message.fill_checksum(secret=SETTINGS.master_secret)
-
             await br.publish(message=message, channel=f'master_{message_tag}')
 
     @property
@@ -53,6 +50,8 @@ class BaseMessageHandler(abc.ABC):
         """
         if match := self.tag_pattern.match(tag):
             return await self.process(match, data)
+
+        return None
 
     @abc.abstractmethod
     async def process(self, match: re.Match, data: dict[str, Any]) -> None:

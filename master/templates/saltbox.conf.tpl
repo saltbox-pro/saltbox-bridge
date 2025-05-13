@@ -10,4 +10,3 @@ REDIS_SSL_CA_CERTS='/etc/redis/certs/ca.crt'
 # Salt.box bridge conf:
 # Time to live for job returns and grains (sec)
 EXPIRE=604800
-MASTER_SECRET='${MASTER_SECRET}'
