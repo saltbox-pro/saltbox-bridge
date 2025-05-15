@@ -4,11 +4,11 @@ import json
 import logging
 from typing import Any, cast
 
+from redis.asyncio import Redis
 from salt.client import Caller, LocalClient
 from salt.config import minion_config
 from salt.exceptions import SaltException
 
-from redis.asyncio import Redis
 from saltbox_bridge.exceptions import CreateJobError
 from saltbox_bridge.utils.types import SaltTgtType
 

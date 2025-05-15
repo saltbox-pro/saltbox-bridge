@@ -35,7 +35,9 @@ version = { attr = 'saltbox_bridge.__version__' }
 [tool.ruff]
 target-version = 'py310'
 line-length = 120
-src = ['engines', 'runners', 'saltbox_bridge']
+# namespace-packages = ['engines', 'runners', 'saltbox_bridge']
+# src = ['engines', 'runners', 'saltbox_bridge']
+# src = ['saltbox_bridge']
 extend-exclude = ['docs', 'env', '__pycache__', '*.egg', 'htmlcov']
 respect-gitignore = true
 unsafe-fixes = false
@@ -89,10 +91,12 @@ convention = 'google'
 
 [tool.ruff.lint.per-file-ignores]
 "tests/**/*.*" = ["S101", "DTZ", "EM101", "RUF012", "E712"]
+"**/__init__.py" = ["I002"]
 # '*/models.py' = ['UP007']
 # '*/schemas.py' = ['UP007']
 
 [tool.ruff.lint.isort]
+required-imports = ["from __future__ import annotations"]
 known-first-party = [
   # 'engines',
   # 'runners',

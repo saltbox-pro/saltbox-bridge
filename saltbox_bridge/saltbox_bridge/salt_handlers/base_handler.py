@@ -4,10 +4,10 @@ import abc
 import re
 from typing import Any
 
+import redis.asyncio as redis
 from faststream.redis import RedisBroker
 from salt.client import LocalClient
 
-import redis.asyncio as redis
 from saltbox_bridge.event_bus.messages.base_messages import BaseMessage
 
 
