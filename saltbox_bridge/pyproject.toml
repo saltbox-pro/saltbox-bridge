@@ -17,9 +17,8 @@ Repository = 'https://dev.saltbox.pro/salt.box'
 [project.optional-dependencies]
 dev = [
   "mypy>=1.15.0",
-  "pre-commit",
-  "types-redis",
-  "ruff",
+  "pre-commit>=4.2.0",
+  "ruff>=0.11.5",
 ]
 
 [build-system]
