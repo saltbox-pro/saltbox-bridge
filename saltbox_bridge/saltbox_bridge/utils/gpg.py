@@ -7,12 +7,11 @@ from typing import cast
 from gnupg import GPG, GenKey, ListKeys, Sign  # type: ignore
 
 from saltbox_bridge.config import HIERARHY, SETTINGS
-from saltbox_bridge.utils.types import Singleton
 
 LOGGER = logging.getLogger(__name__)
 
 
-class SaltBoxCrypt(metaclass=Singleton):
+class SaltBoxCrypt:
     _gpg: GPG = None
     _pubkey: str | None = None
     _pubkey_path: Path | None = None

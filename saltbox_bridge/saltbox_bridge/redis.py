@@ -4,7 +4,6 @@ from typing import Any
 
 import redis
 from redis import asyncio as aioredis
-
 from saltbox_bridge.config import SETTINGS
 
 OPTS: dict[str, Any] = {

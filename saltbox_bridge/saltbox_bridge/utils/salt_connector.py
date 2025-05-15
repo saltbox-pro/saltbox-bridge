@@ -4,12 +4,11 @@ import json
 import logging
 from typing import Any, cast
 
-from redis.asyncio import Redis
-from salt.client import Caller
-from salt.client import LocalClient
+from salt.client import Caller, LocalClient
 from salt.config import minion_config
 from salt.exceptions import SaltException
 
+from redis.asyncio import Redis
 from saltbox_bridge.exceptions import CreateJobError
 from saltbox_bridge.utils.types import SaltTgtType
 
@@ -26,8 +25,8 @@ def get_state_apply_error(data: list[str] | dict[str, dict[str, Any]]) -> list[s
     """
     Proccess return dict from salt state.apply function, return errors
     """
-    # TODO Search for standard salt function
-    # TODO Except potential errors while getting fileds
+    # TODO: Search for standard salt function
+    # TODO: Except potential errors while getting fileds
     if isinstance(data, list):
         return ['\n'.join(data)]
     elif isinstance(data, dict):
@@ -38,7 +37,8 @@ def get_state_apply_error(data: list[str] | dict[str, dict[str, Any]]) -> list[s
                 errors.append(f'{key}: {comment}')
         return errors
     else:
-        raise RuntimeError(f'Unexpected return type {type(data)}')
+        msg = f'Unexpected return type {type(data)}'  # type: ignore[unreachable]
+        raise RuntimeError(msg)
 
 
 class SaltConnector:

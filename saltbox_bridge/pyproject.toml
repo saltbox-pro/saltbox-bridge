@@ -1,7 +1,7 @@
 [project]
 dynamic = [ 'dependencies', 'version' ]
 name = 'saltbox-bridge'
-requires-python = '>=3.10'
+requires-python = '>=3.10, <3.10.17'  # 3.10.17 seems broken for 2025-04-09
 license = 'Apache-2.0'
 description = 'salt.box connector to salt master, service module'
 readme = 'README.md'
@@ -9,11 +9,18 @@ classifiers = [
   'Topic :: System :: Systems Administration',
 ]
 
+[project.urls]
+Repository = 'https://dev.saltbox.pro/salt.box'
+
 [project.scripts]
 
-[metadata]
-url = 'https://dev.saltbox.pro/salt.box'
-version = 'attr: package.__version__'
+[project.optional-dependencies]
+dev = [
+  "mypy>=1.15.0",
+  "pre-commit",
+  "types-redis",
+  "ruff",
+]
 
 [build-system]
 requires = ['setuptools>=57.4.0', 'setuptools-scm']
@@ -26,10 +33,93 @@ include = ['saltbox_bridge', 'saltbox_bridge.*']
 dependencies = { file = ['requirements.txt'] }
 version = { attr = 'saltbox_bridge.__version__' }
 
-[tool.flake8]  # Requires Flake8-pyproject
-max-line-length = 120
-extend-ignore = [ 'E701' ]
-builtins = [ '__opts__', '__salt__' ]
+[tool.ruff]
+target-version = 'py310'
+line-length = 120
+src = ['engines', 'runners', 'saltbox_bridge']
+extend-exclude = ['docs', 'env', '__pycache__', '*.egg', 'htmlcov']
+respect-gitignore = true
+unsafe-fixes = false
+
+[tool.ruff.format]
+quote-style = 'single'
+docstring-code-format = true
+
+[tool.ruff.lint]
+select = [
+  'B',     # flake8-bugbear
+  'C90',   # mccabe
+  'C4',    # flake8-comprehensions
+  'DTZ',   # flake8-datetimez https://docs.astral.sh/ruff/rules/#flake8-datetimez-dtz
+  'EM',    # flake8-errmsg
+  'UP',    # pyupgrade
+  'FA',    # flake8-future-annotations
+  'LOG',   # flake8-logging
+  'PTH',   # flake8-use-pathlib
+  'ASYNC', #flake8-async
+  'G',     # flake8-logging-format
+  'E',     # pycodestyle errors
+  'F',     # pyflakes
+  'I',     # isort
+  'S',     # flake8-bandit
+  'W',     # pycodestyle warnings
+  'N',     # pep8-naming
+  'RUF',   # ruff checks
+  'TD',    # flake8-todo
+]
+ignore = [
+  # 'E402',   # module level import not at top of file
+  'E722', # do not use bare except
+  'ERA',  # do not autoremove commented out code
+  'N818', # error-suffix-on-exception-name
+  'UP040', # type instead of TypeAlias PEP 695'
+  'TD002', # Missing author in TODO
+  'TD003', # Found TODO in code
+  # 'G004', # Logging statement uses string formatting
+]
+fixable = ['ALL']
+unfixable = ['F401', 'F841', 'UP035']
+
+[tool.ruff.lint.flake8-quotes]
+docstring-quotes = 'single'
+inline-quotes = 'single'
+multiline-quotes = 'single'
+
+[tool.ruff.lint.pydocstyle]
+convention = 'google'
+
+[tool.ruff.lint.per-file-ignores]
+"tests/**/*.*" = ["S101", "DTZ", "EM101", "RUF012", "E712"]
+# '*/models.py' = ['UP007']
+# '*/schemas.py' = ['UP007']
+
+[tool.ruff.lint.isort]
+known-first-party = [
+  # 'engines',
+  # 'runners',
+  'saltbox_bridge'
+]
+
+[tool.ruff.lint.mccabe]
+max-complexity = 10
+
 
 [tool.mypy]
-plugins = [ 'pydantic.mypy' ]
+check_untyped_defs = true
+plugins = ["pydantic.mypy"]
+python_version = "3.10"
+ignore_missing_imports = false
+color_output = true
+warn_redundant_casts = true
+warn_unused_configs = true
+exclude = ["venv/", ".venv/", "tests/*", "engines/saltbox_delator.py"]
+strict = true
+disallow_any_generics = false
+disallow_incomplete_defs = true
+disallow_untyped_decorators = true
+disallow_untyped_defs = true
+implicit_reexport = false
+show_error_codes = true
+warn_return_any = true
+warn_unreachable = true
+warn_unused_ignores = true

@@ -2,7 +2,6 @@ from __future__ import annotations
 
 import asyncio
 import logging
-import sys
 
 from faststream import context
 from salt.utils.event import get_master_event

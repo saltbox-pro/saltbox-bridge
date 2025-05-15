@@ -3,10 +3,8 @@ from __future__ import annotations
 import logging
 from pathlib import Path
 
-from pydantic import BaseModel, DirectoryPath
-from pydantic_settings import (
-    BaseSettings, PydanticBaseSettingsSource, SettingsConfigDict, YamlConfigSettingsSource
-)
+from pydantic import DirectoryPath
+from pydantic_settings import BaseSettings, PydanticBaseSettingsSource, SettingsConfigDict, YamlConfigSettingsSource
 
 from saltbox_bridge.utils.ssh import ensure_ssh_key
 from saltbox_bridge.utils.types import SslCertReqs
@@ -103,6 +101,7 @@ class Hierarhy:
     Paths are not directly configurable with config file.
     Directories are guaranted to be created and have correct mode.
     """
+
     SSH_DIR_MODE: int = 0o700
     GPG_DIR_MODE: int = 0o700
 

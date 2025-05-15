@@ -24,11 +24,11 @@ from contextlib import asynccontextmanager
 import salt.config
 from faststream import ContextRepo
 
-from saltbox_bridge.config import HIERARHY, SETTINGS
+from saltbox_bridge.config import SETTINGS
 from saltbox_bridge.event_bus.core_connector import CoreConnector
 from saltbox_bridge.event_bus.faststream_redis import get_faststream_app
 
-#from saltbox_bridge.event_bus.middlewares import MastersAuthMiddleware
+# from saltbox_bridge.event_bus.middlewares import MastersAuthMiddleware
 from saltbox_bridge.event_bus.subscribers import router
 from saltbox_bridge.exceptions import CoreConnectionError
 from saltbox_bridge.redis import get_redis_client
@@ -37,6 +37,7 @@ from saltbox_bridge.utils.salt_connector import SaltConnector
 
 LOG_FORMAT = '%(asctime)s %(levelname)s %(name)s: %(message)s'
 LOGGER = logging.getLogger(__name__)
+
 
 async def _async_start(
     salt_opts: dict,

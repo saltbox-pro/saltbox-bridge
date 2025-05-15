@@ -15,7 +15,7 @@ from saltbox_bridge.event_bus.messages.system_messages import (
     AuthResponceMessage,
     MasterStatus,
     MasterStatusMessage,
-    SshPubKeyModel
+    SshPubKeyModel,
 )
 from saltbox_bridge.event_bus.middlewares import MastersAuthMiddleware
 from saltbox_bridge.utils.gpg import SaltBoxCrypt
