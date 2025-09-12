@@ -21,7 +21,7 @@ import subprocess
 from collections.abc import Generator, Iterable
 from dataclasses import dataclass
 from enum import Enum
-from typing import Any, TypeAlias
+from typing import Any, ClassVar, TypeAlias
 from xml.etree import ElementTree
 
 from salt.exceptions import (  # type: ignore[import-untyped]
@@ -80,6 +80,15 @@ class TransformationBase:
 
     OCS Inventory Agent format is preffered for now.
     """
+    _NON_CATEGORY_FIELDS: ClassVar = {'InputData', 'agent', 'process'}
+
+    def __init_subclass__(cls, **kwargs):
+        super().__init_subclass__(**kwargs)
+        # Check names of transform methods to match category
+        for member in dir(cls):
+            if not member.startswith('_') and member not in cls._NON_CATEGORY_FIELDS and member not in CATEGORIES:
+                msg = f'{cls.__name__}.{member} name does not match any category'
+                raise SaltException(msg)
 
     InputData: TypeAlias = Iterable[Field]
     # To use in base class for "if-based polymorphism"
