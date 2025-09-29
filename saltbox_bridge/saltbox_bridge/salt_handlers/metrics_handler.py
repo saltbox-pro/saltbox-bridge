@@ -7,7 +7,7 @@ from typing import Any, ClassVar
 from saltbox_bridge.salt_handlers.base_handler import BaseMessageHandler, MessageDataType
 
 
-class SaltMessageMetricMessageHandler(BaseMessageHandler):
+class SaltMetricMessageHandler(BaseMessageHandler):
     """
     A message handler for salt payload size
     """

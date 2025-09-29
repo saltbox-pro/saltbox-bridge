@@ -109,10 +109,12 @@ apt-get install --yes fusioninventory-agent less
 EOF
 RUN mkdir --parents /etc/salt/minion.d/
 COPY --chmod=755 minion/minion_entrypoint.sh /usr/local/bin/
+COPY minion/templates/ /root/templates/
 ENV SALT_MASTER=salt-master
 ENV MINION_ID_PREFIX=mock-minion
 ENV SALT_MOCK_MINION_LOG_LEVEL=warning
-# How often to rentry on master hostname lookup error (sec)
+ENV MINION_HARDWARE_METRICS_EXTRACTION_DELAY=20
+# NOTE: How often to rentry on master hostname lookup error (sec)
 ENV SALT_MOCK_MINION_RETRY_DNS=30
 ENTRYPOINT ["/usr/local/bin/minion_entrypoint.sh"]
 CMD ["salt-minion"]

@@ -22,7 +22,7 @@ from saltbox_bridge.salt_handlers.job_return_handler import (
     JobReturnForTaskMessageHandler,
     JobReturnMessageHandler,
 )
-from saltbox_bridge.salt_handlers.metrics_handler import SaltMessageMetricMessageHandler
+from saltbox_bridge.salt_handlers.metrics_handler import SaltMetricMessageHandler
 from saltbox_bridge.salt_handlers.minion_started_handler import MinionStartedMessageHandler
 from saltbox_bridge.salt_handlers.new_job_handler import JobNewForTaskMessageHandler, JobNewMessageHandler
 from saltbox_bridge.salt_handlers.presence_handler import PresenceMessageHandler
@@ -55,7 +55,7 @@ class SaltBridge:
         }
 
         self.handlers = [
-            SaltMessageMetricMessageHandler(**handlers_args),
+            SaltMetricMessageHandler(**handlers_args),
             JobNewMessageHandler(**handlers_args),
             JobNewForTaskMessageHandler(**handlers_args),
             JobReturnMessageHandler(**handlers_args),
