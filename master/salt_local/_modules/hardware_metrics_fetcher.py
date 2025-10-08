@@ -2,7 +2,9 @@
 
 import abc
 import asyncio
+import collections.abc
 import inspect
+import json
 import logging
 import subprocess
 import typing
@@ -13,8 +15,16 @@ from typing import Any, override
 from salt.exceptions import CommandExecutionError, CommandNotFoundError
 from salt.utils.event import get_event
 
-logger = logging.getLogger(__name__)
+logger = logging.getLogger('boilest_logs')
+logger.setLevel(logging.DEBUG)
+formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+
+ch = logging.StreamHandler()
+ch.setLevel(logging.DEBUG)
+logger.addHandler(ch)
+
 __virtualname__ = 'hardware_metrics'
+T = typing.TypeVar("T")
 
 
 def __virtual__():
@@ -28,22 +38,26 @@ async def schedule(extraction_delay: int) -> None:
     collectors: list[BaseCollector] = CollectorFactory.create_all()
 
     while True:
+        try:
+            payload: dict[str, any] = {}
+            collector_to_extraction_task_coroutine: list[tuple[BaseCollector, CoroutineType[Any, Any, dict[str, Any]]]] = \
+                    [(collector, collector.get_data()) for collector in collectors]
 
-        payload: dict[str, any] = {}
-        collector_to_extraction_task_coroutine: list[tuple[BaseCollector, CoroutineType[Any, Any, dict[str, Any]]]] = \
-                [(collector, collector.get_data()) for collector in collectors]
+            tasks: list[CoroutineType[Any, Any, dict[str, Any]]] = [task for _, task in collector_to_extraction_task_coroutine]
+            results: list[dict[str, Any] | BaseException] = await asyncio.gather(*tasks, return_exceptions=True)
 
-        tasks: list[CoroutineType[Any, Any, dict[str, Any]]] = [task for _, task in collector_to_extraction_task_coroutine]
-        results: list[dict[str, Any] | BaseException] = await asyncio.gather(*tasks, return_exceptions=True)
+            for (collector, _), result in zip(collector_to_extraction_task_coroutine, results, strict=False):
+                payload[collector.key] = result
 
-        for (collector, _), result in zip(collector_to_extraction_task_coroutine, results, strict=False):
-            payload[collector.key] = result
+            logger.debug(json.dumps(obj=payload, indent=4))
+            event = get_event("minion", opts=__opts__, io_loop=True)
+            success = await event.fire_event_async(data=payload, tag='foo')
+            if not success:
+                logger.error("Failed to send event")
 
-        event = get_event("minion", opts=__opts__, io_loop=True)
-        success = await event.fire_event_async(data=payload, tag='foo')
-
-        if not success:
-            logger.error("Failed to send hardware metrics")
+        except Exception:
+            logger.exception("Error extracting metrics")
+            break
 
         await asyncio.sleep(extraction_delay)
 
@@ -114,18 +128,36 @@ class BaseCollector(abc.ABC, AsyncIOWrapper):
     def key(self) -> str: ...
 
     async def get_data(self) -> dict[str, Any]:
-        try:
-            data = await self._get_data()
-            return data
-        except BaseException as ex:
-            self._handle_extraction_err(ex)
-            return {}
+        data = await self._get_data()
+        for key, result in data.items():
+            if isinstance(result, dict):
+                for _, inner_result in result.items():
+                    if isinstance(inner_result, BaseException):
+                        data[key] = {}
+                        self._handle_extraction_err(sub_key=key, ex=inner_result)
+
+            if isinstance(result, BaseException):
+                data[key] = {}
+                self._handle_extraction_err(sub_key=key, ex=result)
+        return data
 
     @abc.abstractmethod
     async def _get_data(self) -> dict[str, Any]: ...
 
-    def _handle_extraction_err(self, ex: BaseException) -> None:
-        msg = f"Failed to collect data from '{self.key}' collector"
+    async def _collect_metric(
+        self,
+        sub_key: str,
+        coroutine: collections.abc.Awaitable[T],
+        default: T,
+    ) -> T:
+        try:
+            return await coroutine
+        except BaseException as ex:
+            self._handle_extraction_err(sub_key=sub_key, ex=ex)
+            return default
+
+    def _handle_extraction_err(self, sub_key: str, ex: BaseException) -> None:
+        msg = f"Failed to collect sub-metric '{sub_key}' from '{self.key}' collector"
         logger.error(msg, exc_info=ex)
 
 
@@ -148,17 +180,25 @@ class CpuCollector(BaseCollector):
     @override
     async def _get_data(self) -> dict[str, Any]:
 
-        thread_loads_task = self._get_cpu_thread_loads()
-        temps_task = self._get_cpu_temps_from_thermal_zones()
-        freqs_task = self._get_cpu_thread_frequencies()
+        thread_loads_task = asyncio.create_task(coro=self._get_cpu_thread_loads())
+        temps_task = asyncio.create_task(coro=self._get_cpu_temps_from_thermal_zones())
+        freqs_task = asyncio.create_task(coro=self._get_cpu_thread_frequencies())
 
-        thread_loads, temps, freqs = await asyncio.gather(
-            thread_loads_task,
-            temps_task,
-            freqs_task,
-            return_exceptions=True
+        thread_loads = await self._collect_metric(
+            sub_key='cpu_thread_loads',
+            coroutine=thread_loads_task,
+            default={}
         )
-
+        temps = await self._collect_metric(
+            sub_key='cpu_temp.thermal_zone',
+            coroutine=temps_task,
+            default={}
+        )
+        freqs = await self._collect_metric(
+            sub_key='cpu_threads_frequency_mhz',
+            coroutine=freqs_task,
+            default={}
+        )
         return {
             'cpu_thread_loads': thread_loads,
             'cpu_temp': {
@@ -195,18 +235,28 @@ class CpuCollector(BaseCollector):
 
         temps: dict[str, float] = {}
 
-        read_tasks = []
+        read_tasks: list[asyncio.Task] = []
+        zone_names: list[str] = []
 
         for zone in self._THERMAL_PATH.glob(pattern=self._THERMAL_ZONE_PATH_REGEX):
             type_path = zone / "type"
             temp_path = zone / "temp"
-            if type_path.exists() and temp_path.exists():
-                read_tasks.append(self._read_thermal_zone_data(type_path, temp_path))
+            zone_name = zone.name
+            if type_path.exists() and temp_path.exists() and zone_name.startswith(self._KEY):
+                zone_names.append(zone_name)
+                current_cr_read_data = self._read_thermal_zone_data(type_path, temp_path)
+                read_tasks.append(asyncio.create_task(current_cr_read_data))
+
+        if not read_tasks:
+            return temps
 
         results = await asyncio.gather(*read_tasks, return_exceptions=True)
-        for result in results:
-            # if isinstance(result, BaseException):
-            #     continue
+        for zone_name, result in zip(zone_names, results, strict=False):
+            if isinstance(result, BaseException):
+                self._handle_extraction_err(f'cpu_temp.thermal_zone.{zone_name}', result)
+                continue
+            if result is None:
+                continue
             zone_type, temp = result
             temps[zone_type] = temp
 
@@ -218,25 +268,29 @@ class CpuCollector(BaseCollector):
             self._read_file_content(temp_path)
         )
         zone_type = type_content.strip()
-        if self._KEY in zone_type.lower():
-            return zone_type, int(temp_content.strip()) / 1000
-        msg = "Zone type '%s' is not CPU related"
-        raise ValueError(msg, zone_type)
+        return zone_type, int(temp_content.strip()) / 1000
 
     async def _get_cpu_thread_frequencies(self) -> dict[str, float]:
         freqs: dict[str, float] = {}
-        read_tasks = []
+        read_tasks: list[asyncio.Task] = []
+        cpu_ids: list[str] = []
 
         for freq_path in self._CPU_SYSTEM_DEVICE_PATH.glob(pattern=self._CPU_FREQUENCY_SCALING_PATH_REGEX):
             if freq_path.exists():
-                read_tasks.append(self._read_cpu_frequency_data(freq_path))
+                cpu_id = freq_path.parent.parent.name
+                cpu_ids.append(cpu_id)
+                read_tasks.append(asyncio.create_task(self._read_cpu_frequency_data(freq_path)))
+
+        if not read_tasks:
+            return freqs
 
         results = await asyncio.gather(*read_tasks, return_exceptions=True)
-        for result in results:
-            # if isinstance(result, BaseException):
-            #     continue
-            cpu_id, freq_mhz = result
-            freqs[cpu_id] = freq_mhz
+        for cpu_id, result in zip(cpu_ids, results, strict=False):
+            if isinstance(result, BaseException):
+                self._handle_extraction_err(sub_key=f'cpu_threads_frequency_mhz.{cpu_id}', ex=result)
+                continue
+            result_cpu_id, freq_mhz = result
+            freqs[result_cpu_id] = freq_mhz
 
         return freqs
 
@@ -280,9 +334,18 @@ class DiskCollector(BaseCollector):
 
     @override
     async def _get_data(self) -> dict[str, Any]:
-        df_data_task = self._get_disk_free_data()
-        disk_bps_task = self._get_disk_io_byte_per_sec()
-        df_data, disk_bps = await asyncio.gather(df_data_task, disk_bps_task)
+        df_data_task = asyncio.create_task(self._get_disk_free_data())
+        disk_bps_task = asyncio.create_task(self._get_disk_io_byte_per_sec())
+        df_data = await self._collect_metric(
+            sub_key='disk_free',
+            coroutine=df_data_task,
+            default={}
+        )
+        disk_bps = await self._collect_metric(
+            sub_key='disk_io',
+            coroutine=disk_bps_task,
+            default={}
+        )
         return self._merge_disk_free_data_with_io_bps(df_data, disk_bps)
 
     async def _get_disk_free_data(self) -> dict[str, dict[str, str | float]]:
@@ -360,12 +423,13 @@ class DiskCollector(BaseCollector):
             disk_io_bps_data: dict[str, dict[str, float]],
         ) -> dict[Any, Any]:
 
-        merged_data = {}
-        for device, _ in disk_free_data.items():
-            merged_data: dict = disk_free_data.copy()
+        merged_data: dict[str, dict[str, str | float]] = disk_free_data.copy()
+        for device, stats in disk_free_data.items():
             normalized_device_name = device.removeprefix('/dev/')
             if normalized_device_name in disk_io_bps_data:
-                merged_data[device].update(disk_io_bps_data[normalized_device_name])
+                io_stats = disk_io_bps_data[normalized_device_name]
+                merged_device_stats = {**stats, **io_stats}
+                merged_data[device] = merged_device_stats
         return merged_data
 
 
@@ -380,3 +444,7 @@ class CollectorFactory:
             except Exception:
                 logger.exception("Failed to instantiate '%s' collector", collector_cls.__name__)
         return collectors
+
+
+if __name__ == '__main__':
+    asyncio.run(schedule(extraction_delay=10))
