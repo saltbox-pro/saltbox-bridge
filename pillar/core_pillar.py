@@ -6,13 +6,12 @@ import copy
 import logging
 from typing import Any
 
-from saltbox_bridge_messages import BridgePillarDataRequest
-
 from saltbox_bridge.exceptions import (
     CorePillarError,
     CorePillarTimeoutError,
 )
 from saltbox_bridge.utils.core_connector import CoreConnector
+from saltbox_bridge_messages import BridgePillarDataRequest
 
 # stub for static analyzers: __opts__ injected by salt loader at runtime
 __opts__: dict[str, Any] = {}

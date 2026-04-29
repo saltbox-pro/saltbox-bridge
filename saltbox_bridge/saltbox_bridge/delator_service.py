@@ -16,10 +16,11 @@
 from __future__ import annotations
 
 import asyncio
-import json
 import logging
-from typing import TYPE_CHECKING, Any
+from collections.abc import Coroutine
+from typing import TYPE_CHECKING, Any  # type: ignore
 
+import orjson  # type: ignore
 import salt.config  # type: ignore[import-untyped]
 
 if TYPE_CHECKING:
@@ -43,23 +44,36 @@ class SaltBridge:
         self.master_id: str = self.salt_opts['salt_box_master_id']
         self.core_connector = CoreConnector(master_id=self.master_id)
         self.local_buffer: list[dict] = []
+        self.sem = asyncio.Semaphore(10)
 
     async def start(self) -> None:
         await self.core_connector.wait_success_connection()
 
         with get_master_event(self.salt_opts, self.salt_opts['sock_dir'], listen=True) as event_bus:
             while True:
-                await self.process(event_bus.get_event(full=True, no_block=True))
+                event = await asyncio.get_event_loop().run_in_executor(
+                    None, lambda: event_bus.get_event(full=True, no_block=False, wait=5)
+                )
+                if event is None:
+                    await asyncio.sleep(0.01)
+                    continue
+                await self.process(event)
 
     async def _send_from_local_buffer(self) -> None:
-        for event in self.local_buffer:
-            await self._send_to_events_buffer(tag=event['tag'], data=event['data'])
+        if not self.local_buffer:
+            return
+
+        async def worker(event: dict):
+            async with self.sem:
+                await self._send_to_events_buffer(tag=event['tag'], data=event['data'])
+        workers: list[Coroutine] = [worker(event) for event in self.local_buffer]
+        await asyncio.gather(*workers)
 
     async def _send_to_events_buffer(self, tag: str, data: dict[str, Any]) -> None:
         try:
             await self.redis_client.rpush(
                 f'salt-events:{self.master_id}:to_process',
-                json.dumps({'master_id': self.master_id, 'tag': tag, 'data': data}),
+                orjson.dumps({'master_id': self.master_id, 'tag': tag, 'data': data}),
             )
         except redis_exceptions.RedisError:
             LOGGER.exception('Redis error')

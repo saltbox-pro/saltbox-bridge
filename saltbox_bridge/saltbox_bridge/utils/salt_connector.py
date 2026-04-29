@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import asyncio
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any, Generic, TypeVar
@@ -60,7 +61,10 @@ class SaltConnector:
             load['tgt_type'] = 'list'
             load['tgt'] = target_minions
 
-        ret = self.channel.send(load, timeout=60).get('load', {})
+        raw_ret = await asyncio.get_event_loop().run_in_executor(
+            None, lambda: self.channel.send(load, timeout=60)
+        )
+        ret = raw_ret.get('load', {})
         ret_jid: str = ret.get('jid', '')
         logger.debug("Job return '%s' from ZeroMQ: %s", ret_jid, ret)
 

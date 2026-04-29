@@ -7,7 +7,6 @@ from datetime import datetime, timedelta, timezone
 
 from redis import ConnectionError
 from salt.exceptions import CommandExecutionError  # type: ignore
-
 from saltbox_bridge.config import SETTINGS
 from saltbox_bridge.redis import get_sync_redis_client
 

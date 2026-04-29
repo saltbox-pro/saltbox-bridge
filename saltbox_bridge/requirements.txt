@@ -1,4 +1,5 @@
 faststream[redis]==0.5.48
+orjson==3.11.8
 pydantic-settings~=2.9.1
 pydantic~=2.11.7
 python-gnupg==0.4.8

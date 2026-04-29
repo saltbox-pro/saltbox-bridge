@@ -16,10 +16,10 @@
 from __future__ import annotations
 
 import asyncio
-import json
 import logging
 from typing import Any
 
+import orjson  # type: ignore
 import salt.config  # type: ignore[import-untyped]
 from salt.exceptions import SaltNoMinionsFound  # type: ignore
 
@@ -50,19 +50,17 @@ class JobRunner:
         await self.core_connector.wait_success_connection()
 
         while True:
-            jobs_data: list[bytes] | None = await self.redis_client.lpop(
+            raw: tuple = await self.redis_client.blpop(
                 self.jobs_to_create_list_name, SETTINGS.runner_batch_size
             )
-
-            if not jobs_data:
+            if raw is None:
                 continue
 
-            for job_data in jobs_data:
-                task = asyncio.create_task(self.process(json.loads(job_data.decode())))
-                self.background_tasks.add(task)
-                task.add_done_callback(self.background_tasks.discard)
-
-            await asyncio.sleep(SETTINGS.runner_sleep_timeout)
+            _, raw_job_data = raw
+            job_data = orjson.loads(raw_job_data.decode())
+            task = asyncio.create_task(self.process(job_data))
+            self.background_tasks.add(task)
+            task.add_done_callback(self.background_tasks.discard)
 
     async def process(self, job_data: dict[str, Any]) -> None:
         result: JobResult[str] = await self.salt_connector.publish_job_via_zeromq(
@@ -86,7 +84,7 @@ class JobRunner:
 
                 await self.redis_client.rpush(
                     f'salt-events:{self.master_id}:to_process',
-                    json.dumps(
+                    orjson.dumps(
                         {
                             'master_id': self.master_id,
                             'tag': f'saltbox/job/{job_data["jid"]}/error',
@@ -98,7 +96,7 @@ class JobRunner:
                 LOGGER.debug('Job reached max retries, skipping job: %s', job_data)
                 return
 
-            await self.redis_client.lpush(self.jobs_to_create_list_name, json.dumps(job_data))
+            await self.redis_client.lpush(self.jobs_to_create_list_name, orjson.dumps(job_data))
 
 
 async def _async_start(salt_opts: dict | None) -> None:
