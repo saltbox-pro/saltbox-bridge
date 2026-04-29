@@ -19,7 +19,7 @@ import asyncio
 import logging
 from typing import Any
 
-import orjson  # type: ignore
+import orjson
 import salt.config  # type: ignore[import-untyped]
 from salt.exceptions import SaltNoMinionsFound  # type: ignore
 
@@ -50,7 +50,7 @@ class JobRunner:
         await self.core_connector.wait_success_connection()
 
         while True:
-            raw: tuple = await self.redis_client.blpop(
+            raw: tuple[Any, Any] | None = await self.redis_client.blpop(
                 self.jobs_to_create_list_name, SETTINGS.runner_batch_size
             )
             if raw is None:

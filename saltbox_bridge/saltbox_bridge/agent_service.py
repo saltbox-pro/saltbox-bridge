@@ -47,7 +47,7 @@ async def _async_start(salt_opts: dict | None) -> None:
     await core_connector.wait_success_connection()
 
     @asynccontextmanager
-    async def lifespan(context: ContextRepo) -> AsyncIterator:  # noqa: RUF029
+    async def lifespan(context: ContextRepo) -> AsyncIterator:
         redis_client = get_redis_client()
 
         salt_connector = SaltConnector(salt_opts=salt_opts, redis_client=redis_client)

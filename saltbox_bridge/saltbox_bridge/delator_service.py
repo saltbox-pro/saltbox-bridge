@@ -18,9 +18,9 @@ from __future__ import annotations
 import asyncio
 import logging
 from collections.abc import Coroutine
-from typing import TYPE_CHECKING, Any  # type: ignore
+from typing import TYPE_CHECKING, Any
 
-import orjson  # type: ignore
+import orjson
 import salt.config  # type: ignore[import-untyped]
 
 if TYPE_CHECKING:
@@ -63,7 +63,7 @@ class SaltBridge:
         if not self.local_buffer:
             return
 
-        async def worker(event: dict):
+        async def worker(event: dict) -> None:
             async with self.sem:
                 await self._send_to_events_buffer(tag=event['tag'], data=event['data'])
         workers: list[Coroutine] = [worker(event) for event in self.local_buffer]
