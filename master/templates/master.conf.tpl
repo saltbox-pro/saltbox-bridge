@@ -11,6 +11,9 @@ file_ignore_glob:
   - '*.pyc'
   - '*.swp'
 auto_accept: true
+# Allow minions to push files to the master (client file-manager download via cp.push).
+file_recv: True
+file_recv_max_size: 100
 log_level: '${SALT_MASTER_LOG_LEVEL}'
 log_level_logfile: 'quiet'
 log_fmt_console: '%(asctime)s %(colorlevel)s %(colorname)s %(colormsg)s'
