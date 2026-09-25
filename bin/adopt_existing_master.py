@@ -379,6 +379,29 @@ DEFAULT_SALTBOX_CONFIG: Dict[str, Any] = {  # pyright: ignore[reportDeprecated] 
 }
 
 
+def load_master_config() -> Dict[str, Any]:  # ruff: ignore[non-pep585-annotation]  # pyright: ignore[reportDeprecated]
+    if not MASTER_CONFIG_PATH.exists():
+        return {}
+
+    try:
+        return yaml.safe_load(MASTER_CONFIG_PATH.read_text(encoding="utf-8")) or {}  # pyright: ignore[reportOptionalMemberAccess]
+    except yaml.YAMLError as err:  # pyright: ignore[reportOptionalMemberAccess]
+        msg = f"Failed to parse existing '{MASTER_CONFIG_PATH}' as YAML"
+        raise InstallerError(msg) from err
+
+
+def resolve_master_id(candidate_id: str) -> str:
+    check_yaml_available()
+
+    existing_id = load_master_config().get("salt_box_master_id")
+    if not existing_id or not isinstance(existing_id, str):
+        return candidate_id
+
+    log(f"Reusing existing Salt Master id '{existing_id}' found in '{MASTER_CONFIG_PATH}'"
+            + f" (ignoring generated '{candidate_id}')")
+    return existing_id
+
+
 def backup_master_config() -> Path:
     if not MASTER_CONFIG_PATH.exists():
         msg = f"'{MASTER_CONFIG_PATH}' does not exist, nothing to back up"
@@ -524,12 +547,7 @@ def merge_master_config(master_id: str) -> None:
     log(f"Merging bridge configuration into '{MASTER_CONFIG_PATH}'...")
     check_yaml_available()
 
-    try:
-        current = yaml.safe_load(MASTER_CONFIG_PATH.read_text(encoding="utf-8")) or {}  # pyright: ignore[reportOptionalMemberAccess]
-    except yaml.YAMLError as err:  # pyright: ignore[reportOptionalMemberAccess]
-        msg = f"Failed to parse existing '{MASTER_CONFIG_PATH}' as YAML"
-        raise InstallerError(msg) from err
-
+    current = load_master_config()
     merged = merge_master_config_dict(current, master_id)
 
     try:
@@ -586,6 +604,7 @@ def restart_master_service() -> None:
 
 
 def adopt_master(config: Config) -> None:
+    config.master_id = resolve_master_id(config.master_id)  # pyright: ignore[reportArgumentType, reportAttributeAccessIssue]
     log(f"Starting adoption of the existing Salt Master (id='{config.master_id}')...")
 
     redis_info = load_redis_connection_info(config.saltbox_dir)
