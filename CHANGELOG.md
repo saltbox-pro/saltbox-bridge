@@ -12,10 +12,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - `install_master.sh`: interactive installer script for a secondary Salt Master systemd-service.
 - `install_evil.sh`: interactive installer script for a Salt Evil Minions systemd-service.
+- `adopt_existing_master.py`: script to adopt an already running Salt Master
+  into Salt.Box, resolving its existing master ID.
+- `ini_manage` Salt execution module and state (ported from Salt 3006.21).
+- `monitors` and `printers` inventory categories.
 
 ### Changed
 
+- `core_pillar`: lower pillarenv logging from info to debug level.
+
 ### Fixed
+
+- `install_master.sh`: fix unbound variable and hide password input.
 
 
 ## [0.3.0] - 2026-07-10
