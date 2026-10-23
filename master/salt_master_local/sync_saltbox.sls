@@ -38,7 +38,12 @@ update_ssh_config:
 # User created files managed with FileBrowser
 {% set custom_src = pillar.get('salt_conf_custom_source', '/srv/master/salt_custom/') %}
 {% set custom_dst = pillar.get('salt_conf_custom_destination', '/srv/salt_custom/') %}
+
+{% set roster_src = pillar.get('salt_conf_roster_source', '/srv/master/roster/') %}
+{% set roster_dst = pillar.get('salt_conf_roster_destination', '/srv/roster/') %}
+
 {{ sync(name='sync_salt_custom', src='saltbox-salt-conf:' + custom_src, dst=custom_dst) }}
+{{ sync(name='sync_salt_roster', src='saltbox-salt-conf:' + roster_src, dst=roster_dst) }}
 {%- endif %}
 
 {% if pillar.get('sshfs_sync_on', True) %}

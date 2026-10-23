@@ -10,6 +10,7 @@ file_ignore_glob:
   - '*/.git/*'
   - '*.pyc'
   - '*.swp'
+roster_file: /srv/roster/roster
 auto_accept: true
 log_level: '${SALT_MASTER_LOG_LEVEL}'
 log_level_logfile: 'quiet'
