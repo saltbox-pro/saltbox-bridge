@@ -52,6 +52,9 @@
   вместе с этим репозиторием, сюда же можно добавлять свои
 - `/srv/sshfs/` – для файлов, которые отдаются одновременно как `ssh://` и
   как `salt://`
+- `/srv/roster/` – для файла `roster` Salt SSH, управляемого через Salt.Box
+  File Browser. Синхронизируется с сервера `saltbox-salt-conf` и не отдаётся
+  через `salt://`
 - `/srv/migrator/` – каталог файлов Salt, связанных с процессом миграции,
   доступен через filebrowser при включённом флаге
   `FILEBROWSER_MIGRATOR_SOURCE_ENABLED`
