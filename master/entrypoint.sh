@@ -38,5 +38,10 @@ envsubst '$REDIS_USERNAME $REDIS_PASSWORD' \
   < /root/templates/saltbox.conf.tpl \
   > /etc/salt/saltbox
 
+if [ ! -f /srv/roster/roster ]; then
+  mkdir --parents /srv/roster/
+  cp /srv/salt_master_local/files/roster /srv/roster/roster
+fi
+
 echo "${0} args to eval: ${*}"
 exec "$@"

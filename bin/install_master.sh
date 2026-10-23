@@ -68,6 +68,9 @@ declare -r master_conf_tpl="${bridge_dir}/master/templates/master.conf.tpl"
 declare -r minion_conf_tpl="${bridge_dir}/master/templates/minion.conf.tpl"
 declare -r saltbox_conf_tpl="${bridge_dir}/master/templates/saltbox.conf.tpl"
 
+declare -r roster_path=/srv/roster/roster
+declare -r roster_tpl="${bridge_dir}/master/salt_master_local/files/roster"
+
 # shellcheck disable=SC2155
 declare -r master_conf_extra_tpl="$(cat <<'EOF'
 user: root
@@ -347,6 +350,9 @@ messages[sync_bridge_files_success,ru]='Файлы saltbox-bridge успешно
 
 messages[sync_bridge_files_failed,en]='Failed to sync: %s'
 messages[sync_bridge_files_failed,ru]='Не удалось синхронизировать: %s'
+
+messages[roster_default_failed,en]='Failed to create default Salt SSH roster: %s'
+messages[roster_default_failed,ru]='Не удалось создать ростер Salt SSH по умолчанию: %s'
 
 messages[install_bridge_start,en]='Installing saltbox-bridge Python package...'
 messages[install_bridge_start,ru]='Установка Python-пакета saltbox-bridge...'
@@ -896,6 +902,7 @@ function 06__prepare_salt_dir() {
     /srv/salt_custom
     /srv/saltbox_salt
     /srv/sshfs
+    /srv/roster
     /var/lib/saltbox-bridge
     /etc/salt/ssl
   )
@@ -1082,6 +1089,15 @@ function 08__sync_bridge_files() {
       log "ERROR" sync_bridge_files_failed "${source}"
     fi
   done
+
+  if [[ ! -f "${roster_path}" ]]; then
+    local cp_cmd
+    cp_cmd=(cp -v "${roster_tpl}" "${roster_path}")
+
+    if ! run_indented "${cp_cmd[@]}"; then
+      log "ERROR" roster_default_failed "${roster_path}"
+    fi
+  fi
   log "INFO" sync_bridge_files_success
 }
 

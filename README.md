@@ -50,9 +50,9 @@ modules
 - `/srv/salt_extmod/` is for "external modules". There are some distributed
   with this repository. It is possible to put some custom modules here also
 - `/srv/sshfs/` for files to serve both as `ssh://` and `salt://`
-- `/srv/roster/` is for the Salt SSH `roster` file managed with Salt.Box File
-  Browser. It is synced from the `saltbox-salt-conf` server and is not served
-  via `salt://`
+- `/srv/roster/` is for the Salt SSH `roster` file of this master. It is
+  created from a template on the first start, edited locally on the master,
+  not synced with Salt.Box and not served via `salt://`
 - `/srv/migrator/` – directory of Salt files related to the migration process, accessible
   via the filebrowser when `FILEBROWSER_MIGRATOR_SOURCE_ENABLED` flag is enabled
 

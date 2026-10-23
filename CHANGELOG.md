@@ -9,9 +9,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
-- `sync_saltbox` state: sync the Salt SSH roster from `/srv/master/roster/` on
-  the `saltbox-salt-conf` server to `/srv/roster/` on the master.
-- `master.conf.tpl`: `roster_file` points to `/srv/roster/roster`.
+- Local Salt SSH roster per master: `master.conf.tpl` sets `roster_file` to
+  `/srv/roster/roster`. `entrypoint.sh` and `install_master.sh` create it from
+  a fully commented template describing the roster format if it is missing, an
+  existing file is never overwritten.
 
 ### Changed
 

@@ -1,0 +1,30 @@
+# See official documentation: https://docs.saltproject.io/salt/user-guide/en/latest/topics/salt-ssh.html#roster-file
+
+# minion_id:      # The ID to reference the target system
+#   host:         # The IP or DNS name of the remote host
+#   user:         # The user to login as (unless the same as user
+#                 # issuing salt-ssh command)
+#
+#   passwd:       # The password for the login user
+#   port:         # Port the target system is listening for SSH
+#   sudo:         # Boolean to run commands via sudo, default:
+#                 # False
+#                 # sudo only works if NOPASSWD is set for user
+#                 # in /etc/sudoers: fred ALL=(ALL) NOPASSWD: ALL
+#
+#   tty:          # Boolean: Set this option to True if sudo is
+#                 # also set to True and requiretty is also set on
+#                 # the target system
+#
+#   priv:         # File path to ssh private key
+#   priv_passwd:  # Passphrase for ssh private key
+#   timeout:      # Number of seconds to wait for response when
+#                 # establishing an SSH connection
+#
+#   minion_opts:  # Dictionary of minion opts
+#   thin_dir:     # The target system's storage directory for Salt
+#                 # components. Defaults to /var/tmp/salt-<hash>.
+#
+#   cmd_umask:    # umask to enforce the salt-call command.
+#                 # Should be in octal (so for 0o077 in YAML you
+#                 # would do 0077, or 63)
