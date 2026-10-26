@@ -32,7 +32,7 @@ declare -r salt_crt_destination="/etc/salt/ssl/${crt_file_name}"
 declare -r correct_head_crt="-----BEGIN CERTIFICATE-----"
 declare -r correct_tail_crt="-----END CERTIFICATE-----"
 
-declare -r salt_version=3007.13
+declare -r salt_version=3008.3
 declare -r salt_pkgs=(
   "salt-common=${salt_version}"
   "salt-master=${salt_version}"
