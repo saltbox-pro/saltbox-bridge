@@ -20,8 +20,8 @@ mkdir --parents /var/cache/apt/archives/partial/ /var/lib/apt/lists/partial/
 apt-get update
 apt-get install --yes curl glibc-pthread lsb-release openssl procps
 EOF
-ARG SALT_VERSION='3007.13'
-ARG SALT_TARBALL_SHA512='4fc50ef1ed431ee960d2d5461181dc93bb2a450011e0156d866c6046ce36ce1cdc09d55658059be095eba050d895d2a652a6c4721e5e1dcb791fb7c10afb8f5a'
+ARG SALT_VERSION='3008.3'
+ARG SALT_TARBALL_SHA512='68cead550cbdb606cbe1204c6ac7ca4428c72eb8bc18fc7d7d9c16c51db26a1b3c1a237cf9c1ad63d8d4528a794afd6e2a31738ae49d075e279bf1044d54f753'
 ARG _SALT_TARBALL_FILENAME="salt-${SALT_VERSION}-onedir-linux-x86_64.tar.xz"
 ARG _SALT_ONEDIR_URL="https://packages.broadcom.com/artifactory/saltproject-generic/onedir/$SALT_VERSION/${_SALT_TARBALL_FILENAME}"
 ARG SALT_PATH_PREFIX='/opt'

@@ -18,6 +18,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- Delator: subscribe to the master event bus before waiting for the Core
+  connection and keep events in the local buffer until Core accepts the master,
+  so `salt/minion/<id>/start` events fired on a fresh install are no longer lost
+  and `grains.items` jobs are created for every minion.
+- Delator: clear the local buffer after sending it to Redis, buffered events
+  were sent again on every processed event.
+- Delator: import Redis exceptions at runtime, a Redis error raised `NameError`
+  instead of buffering the event.
+
 ## [0.4.0] - 2026-10-13
 
 ### Added

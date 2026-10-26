@@ -18,12 +18,10 @@ from __future__ import annotations
 import asyncio
 import json
 import logging
-from typing import TYPE_CHECKING, Any
+from typing import Any
 
 import salt.config  # type: ignore[import-untyped]
-
-if TYPE_CHECKING:
-    from redis import exceptions as redis_exceptions
+from redis import exceptions as redis_exceptions
 from salt.utils.event import get_master_event  # type: ignore[import-untyped]
 
 from saltbox_bridge.config import SETTINGS, configure_logging
@@ -43,24 +41,49 @@ class SaltBridge:
         self.background_tasks: set[asyncio.Task] = set()
 
     async def start(self) -> None:
-        await self.core_connector.wait_success_connection()
 
         with get_master_event(self.salt_opts, self.salt_opts['sock_dir'], listen=True) as event_bus:
+
+            connection_task = asyncio.create_task(self.core_connector.wait_success_connection())
+
             while True:
                 event = await asyncio.get_event_loop().run_in_executor(
                     event_bus.io_loop,
                     lambda: event_bus.get_event(full=True, no_block=False, wait=SETTINGS.delator_wait_time),
                 )
 
+                is_core_connected = self._is_core_connected(connection_task)
+
+                if is_core_connected and self.local_buffer:
+                    await self._send_from_local_buffer()
+
                 if not event:
+                    continue
+
+                if not is_core_connected:
+                    tag = event['tag']
+                    msg = f'Core is not connected yet, keep event with tag {tag!r} in local_buffer'
+                    LOGGER.debug(msg)
+                    self.local_buffer.append({'tag': event['tag'], 'data': event['data']})
                     continue
 
                 task = asyncio.create_task(self.process(event))
                 self.background_tasks.add(task)
                 task.add_done_callback(self.background_tasks.discard)
 
+    @staticmethod
+    def _is_core_connected(connection_task: asyncio.Task) -> bool:
+        if not connection_task.done():
+            return False
+
+        connection_task.result()
+        return True
+
     async def _send_from_local_buffer(self) -> None:
-        for event in self.local_buffer:
+        buffered_events = self.local_buffer
+        self.local_buffer = []
+
+        for event in buffered_events:
             await self._send_to_events_buffer(tag=event['tag'], data=event['data'])
 
     async def _send_to_events_buffer(self, tag: str, data: dict[str, Any]) -> None:
