@@ -64,6 +64,7 @@ class SaltCaller:
             'salt_conf_user': SETTINGS.salt_conf_user,
             'salt_conf_privkey': str(HIERARHY.salt_conf_privkey),
             'salt_conf_pubkey': str(HIERARHY.salt_conf_pubkey),
+            'salt_conf_custom_sync_on': SETTINGS.salt_conf_custom_sync_on,
         }
         ret = self.caller.cmd('state.apply', state_name, pillar=pillar)
         logger.info('Finished %s', state_name)
@@ -94,6 +95,7 @@ class SaltCaller:
             'salt_conf_user': SETTINGS.salt_conf_user,
             'salt_conf_privkey': str(HIERARHY.salt_conf_privkey),
             'salt_conf_pubkey': str(HIERARHY.salt_conf_pubkey),
+            'salt_conf_custom_sync_on': SETTINGS.salt_conf_custom_sync_on,
         }
         ret = self.caller.cmd('state.apply', state_name, pillar=pillar)
         logger.info('Finished %s', state_name)

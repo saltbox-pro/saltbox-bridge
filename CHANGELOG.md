@@ -18,6 +18,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- `sync_saltbox` state: pass `salt_conf_custom_sync_on` to the pillar, the
+  `false` value from `saltbox.conf` was ignored and the Docker-based master
+  synced `/srv/salt_custom/` onto itself with `rsync --delete` on every sync,
+  which could remove files created in FileBrowser during the sync.
 - Delator: subscribe to the master event bus before waiting for the Core
   connection and keep events in the local buffer until Core accepts the master,
   so `salt/minion/<id>/start` events fired on a fresh install are no longer lost
