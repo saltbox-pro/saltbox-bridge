@@ -2,7 +2,7 @@
 
 variables:
   CONFIG_FILE_PATH: './saltbox_bridge/pyproject.toml'
-  PYTHON: python3.14.10
+  PYTHON: python3.14
 
 
 stages:
@@ -27,10 +27,11 @@ include:
   variables:
     APK_CACHE_DIR: '${CI_PROJECT_DIR}/.cache/apk'
     UV_CACHE_DIR: '${CI_PROJECT_DIR}/.cache/uv'
+    CC: clang
   image: alpine:latest
   before_script:
     - mkdir --parents "$APK_CACHE_DIR"
-    - apk add --cache-dir "$APK_CACHE_DIR" git uv
+    - apk add --cache-dir "$APK_CACHE_DIR" build-base clang compiler-rt git uv
     - uv sync --project saltbox_bridge --python="$PYTHON" --extra dev --extra salt --no-sources
     - source saltbox_bridge/.venv/bin/activate
   cache:

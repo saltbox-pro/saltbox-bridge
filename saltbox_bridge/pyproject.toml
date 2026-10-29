@@ -37,7 +37,7 @@ dev = [
   "types-redis",
 ]
 salt = [
-  "salt==3008.3",
+  "salt==3008.5",
 ]
 
 [build-system]
