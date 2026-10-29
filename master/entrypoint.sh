@@ -11,12 +11,10 @@ error() {
 }
 
 if [ "$SALTBOX_DEV_MODE" = 1 ]; then
-  # Update install
   chown -R "$(id -u):$(id -g)" "$SALTBOX_BRIDGE_SRC_PATH"
 
-  # `salt-pip` needs --target='' for editable, but uv does not
-  python3 -m uv --no-progress pip install --no-build-isolation --editable "$SALTBOX_BRIDGE_SRC_PATH"
-  python3 -m uv --no-progress pip install --no-build-isolation --editable "$SALTBOX_BRIDGE_MESSAGES_SRC_PATH"
+  uv --no-progress pip install --python="$SALT_PYTHON" --no-build-isolation --editable "$SALTBOX_BRIDGE_SRC_PATH"
+  uv --no-progress pip install --python="$SALT_PYTHON" --no-build-isolation --editable "$SALTBOX_BRIDGE_MESSAGES_SRC_PATH"
 fi
 
 [ -z "$REDIS_USERNAME" ] && error 'Missing REDIS_USERNAME value'

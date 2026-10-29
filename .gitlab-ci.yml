@@ -2,6 +2,8 @@
 
 variables:
   CONFIG_FILE_PATH: './saltbox_bridge/pyproject.toml'
+  PYTHON: python3.14.10
+
 
 stages:
   - test
@@ -23,18 +25,18 @@ include:
 .lint-job:
   stage: test
   variables:
-    PIP_CACHE_DIR: '$CI_PROJECT_DIR/.cache/pip'
-    APK_CACHE_DIR: '$CI_PROJECT_DIR/.cache/apk'
-  image: python:3.10-alpine
+    APK_CACHE_DIR: '${CI_PROJECT_DIR}/.cache/apk'
+    UV_CACHE_DIR: '${CI_PROJECT_DIR}/.cache/uv'
+  image: alpine:latest
   before_script:
-    - mkdir -p "$APK_CACHE_DIR"
-    - apk add --cache-dir "$APK_CACHE_DIR" git
-    - pip3 install -e ./saltbox_bridge[dev,salt]
-    - python -V
+    - mkdir --parents "$APK_CACHE_DIR"
+    - apk add --cache-dir "$APK_CACHE_DIR" git uv
+    - uv sync --project saltbox_bridge --python="$PYTHON" --extra dev --extra salt --no-sources
+    - source saltbox_bridge/.venv/bin/activate
   cache:
     paths:
-      - '$PIP_CACHE_DIR'
       - '$APK_CACHE_DIR'
+      - '$UV_CACHE_DIR'
 
 
 Ruff:
@@ -60,3 +62,4 @@ Build Salt Master image:
   variables:
     TARGET: salt-master
     REGISTRY_ADDITIONAL_PATH: '/salt-master'
+    EXTRA_ARGS: "--build-arg='BASE_IMG=$BASE_IMAGE'"

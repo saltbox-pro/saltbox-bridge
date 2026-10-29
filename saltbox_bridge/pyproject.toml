@@ -7,7 +7,19 @@ license-files = ["LICENSE.txt"]
 classifiers = [
   "Topic :: System :: Systems Administration",
 ]
-dynamic = ["dependencies", "version"]
+dynamic = ["version"]
+dependencies = [
+  "faststream[redis]==0.5.48",
+  "pydantic-settings~=2.9.1",
+  "pydantic~=2.12.5",
+  "python-gnupg==0.5.6",
+  "redis~=5.2.0",
+
+  # Dependencies from Salt.Box Team server.
+  # - Prefer tag or commit hash over branch to specify version.
+  # - Prefer long hash over short hash for pip efficiency.
+  "saltbox-bridge-messages @ git+https://dev.saltbox.pro/saltbox/saltbox-bridge-messages/@784c0a1cddc1e094a462e5c45ae9e674bf97e6fa",
+]
 
 [project.urls]
 Repository = "https://dev.saltbox.pro/salt.box"
@@ -25,7 +37,7 @@ dev = [
   "types-redis",
 ]
 salt = [
-  "salt==3007.13",
+  "salt==3008.3",
 ]
 
 [build-system]
@@ -131,10 +143,12 @@ max-complexity = 10
 include = ["saltbox_bridge", "saltbox_bridge.*"]
 
 [tool.setuptools.dynamic]
-dependencies = { file = ["requirements.txt", "local_requirements.txt"] }
 version = { attr = "saltbox_bridge.__version__" }
 
 [tool.setuptools_scm]
 fallback_version = "0.0.0"
 
 # vi: sw=2
+
+[tool.uv.sources]
+saltbox-bridge-messages = { path = "../../saltbox-bridge-messages", editable = true }
