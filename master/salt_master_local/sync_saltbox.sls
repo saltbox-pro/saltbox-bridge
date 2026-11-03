@@ -11,14 +11,21 @@ respect saltbox.conf.
 {%- set ssh_dir = pillar.get('ssh_dir', '/var/lib/saltbox-bridge/ssh/') %}
 {% set ssh_conf = ssh_dir + '/ssh.conf' %}
 {% macro sync(name, src, dst) -%}
-{{ name }}:
-  rsync.synchronized:
+{{ name }}_destination:
+  file.directory:
     - name: {{ dst | yaml_squote }}
-    - source: {{ src | yaml_squote }}
-    - prepare: yes  # Create destination dir
-    - delete: yes  # Purge unexisted on source
-    - force: yes  # Delete non-empty dirs
-    - additional_opts: [ '-e', "ssh -F '{{ ssh_conf }}'" ]
+    - makedirs: yes
+
+{{ name }}:
+  module.run:
+    - rsync.rsync:
+      - src: {{ src | yaml_squote }}
+      - dst: {{ dst | yaml_squote }}
+      - delete: yes
+      - force: yes
+      - additional_opts: [ '-e', "ssh -F '{{ ssh_conf }}'" ]
+    - require:
+      - file: {{ name }}_destination
 {% endmacro %}
 
 update_ssh_config:

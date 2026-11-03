@@ -18,6 +18,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- `sync_saltbox` state: call the `rsync.rsync` execution module via
+  `module.run` and create destination directories with `file.directory`,
+  the `rsync.synchronized` state was removed in Salt 3008 and the sync failed
+  with `'rsync.synchronized' is not available`.
 - `sync_saltbox` state: pass `salt_conf_custom_sync_on` to the pillar, the
   `false` value from `saltbox.conf` was ignored and the Docker-based master
   synced `/srv/salt_custom/` onto itself with `rsync --delete` on every sync,
