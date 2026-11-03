@@ -18,6 +18,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- `core_pillar`: on Core response timeout log a warning and return the error
+  in the `_errors` pillar key instead of raising, Salt no longer prints a
+  traceback and a critical message for every minion while Core is starting.
+  State runs still fail with the pillar error until Core responds.
 - `sync_saltbox` state: call the `rsync.rsync` execution module via
   `module.run` and create destination directories with `file.directory`,
   the `rsync.synchronized` state was removed in Salt 3008 and the sync failed

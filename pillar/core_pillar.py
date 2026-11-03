@@ -6,10 +6,9 @@ import copy
 import logging
 from typing import Any
 
-from saltbox_bridge_messages import BridgePillarDataRequest
-
-from saltbox_bridge.exceptions import CorePillarError, CorePillarTimeoutError
+from saltbox_bridge.exceptions import CorePillarError
 from saltbox_bridge.utils.core_connector import CoreConnector
+from saltbox_bridge_messages import BridgePillarDataRequest
 
 # stub for static analyzers: __opts__ injected by salt loader at runtime
 __opts__: dict[str, Any] = {}
@@ -23,7 +22,13 @@ def __virtual__() -> bool | tuple[bool, str]:  # noqa: N807
     return True
 
 
-async def async_ext_pillar(minion_id: str, pillar: dict, *args: Any, **kwargs: Any) -> dict:
+async def async_ext_pillar(
+    minion_id: str,
+    pillar: dict,
+    *args: Any,
+    **kwargs: Any
+) -> dict:
+
     opts = copy.deepcopy(__opts__)
 
     pillarenv: str = kwargs.get('pillarenv') or opts.get('pillarenv') or 'base'
@@ -56,13 +61,24 @@ async def async_ext_pillar(minion_id: str, pillar: dict, *args: Any, **kwargs: A
             raise CorePillarError(msg) from None
         pillars: dict = response.get('pillars', {})
     except TimeoutError:
-        msg = f'Timeout while waiting for pillar data response from Core for minion "{minion_id}" and env "{pillarenv}"'
-        LOGGER.error(msg)
-        raise CorePillarTimeoutError(msg) from None
+        msg = (
+            f'Core is not ready yet, pillar data for minion {minion_id!r} and env {pillarenv!r} is not available, '
+            'it will be requested again on the next pillar refresh or state run'
+        )
+        LOGGER.warning(msg)
+        return {'_errors': [msg]}
     return pillars
 
 
-def ext_pillar(minion_id: str, pillar: dict, *args: Any, **kwargs: Any) -> dict:
+def ext_pillar(
+    minion_id: str,
+    pillar: dict,
+    *args: Any,
+    **kwargs: Any
+) -> dict:
     with concurrent.futures.ThreadPoolExecutor(max_workers=1) as executor:
-        future = executor.submit(asyncio.run, async_ext_pillar(minion_id, pillar, *args, **kwargs))
+        future = executor.submit(
+            asyncio.run,
+            async_ext_pillar(minion_id, pillar, *args, **kwargs)
+        )
         return future.result()
