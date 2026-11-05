@@ -6,6 +6,8 @@ import copy
 import logging
 from typing import Any
 
+from redis.exceptions import ConnectionError as RedisConnectionError
+from redis.exceptions import TimeoutError as RedisTimeoutError
 from saltbox_bridge.exceptions import CorePillarError
 from saltbox_bridge.utils.core_connector import CoreConnector
 from saltbox_bridge_messages import BridgePillarDataRequest
@@ -64,6 +66,13 @@ async def async_ext_pillar(
         msg = (
             f'Core is not ready yet, pillar data for minion {minion_id!r} and env {pillarenv!r} is not available, '
             'it will be requested again on the next pillar refresh or state run'
+        )
+        LOGGER.warning(msg)
+        return {'_errors': [msg]}
+    except (RedisConnectionError, RedisTimeoutError) as ex:
+        msg: str = (
+            f'Redis is not available, pillar data from minion {minion_id!r} and env {pillarenv!r} is not available, '
+            f'it will be requested again on the next pillar refresh or state run: {ex}'
         )
         LOGGER.warning(msg)
         return {'_errors': [msg]}
