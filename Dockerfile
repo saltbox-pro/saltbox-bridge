@@ -81,7 +81,6 @@ COPY --chmod=u=rwX,go=rX engines /srv/salt_extmod/engines/
 COPY --chmod=u=rwX,go=rX runners /srv/salt_extmod/runners/
 COPY --chmod=u=rwX,go=rX pillar /srv/salt_extmod/pillar/
 
-# Changing of ID leads to key rotation!
 ENV SALT_MASTER_ID='salt-master'
 ENV REDIS_USERNAME=redis
 ENV REDIS_PASSWORD_FILE=

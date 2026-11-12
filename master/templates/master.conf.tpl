@@ -1,4 +1,4 @@
-master_id: '${SALT_MASTER_ID}'  # Changing leads to Master keys rotation!
+master_id: '${SALT_MASTER_ID}'  # Changing may lead to key rotation!
 
 module_dirs:
   - /srv/salt_extmod/
