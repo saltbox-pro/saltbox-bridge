@@ -31,8 +31,8 @@ include:
   before_script:
     - mkdir --parents "$APK_CACHE_DIR"
     - apk add --cache-dir "$APK_CACHE_DIR" build-base clang compiler-rt git uv
-    - uv sync --python="$PYTHON" --extra dev --extra salt --no-sources
-    - source saltbox_bridge/.venv/bin/activate
+    - uv sync --python="$PYTHON" --group dev --no-sources
+    - source .venv/bin/activate
   cache:
     paths:
       - '$APK_CACHE_DIR'
@@ -41,19 +41,19 @@ include:
 
 Ruff:
   extends: .lint-job
-  script: 'ruff check saltbox_bridge'
+  script: 'ruff check'
 
 
 Mypy:
   extends: .lint-job
-  script: 'mypy saltbox_bridge'
+  script: 'mypy'
 
 
 Bump Salt Master version:
   stage: bump-version
   extends: .set-backend-version
   variables:
-    INNER_VERSION_FILE: 'saltbox_bridge/saltbox_bridge/__init__.py'
+    INNER_VERSION_FILE: 'saltbox_bridge/__init__.py'
 
 
 Build Salt Master image:
