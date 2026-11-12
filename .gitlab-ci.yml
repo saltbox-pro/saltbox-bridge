@@ -1,7 +1,6 @@
 ---
 
 variables:
-  CONFIG_FILE_PATH: './saltbox_bridge/pyproject.toml'
   PYTHON: python3.14
 
 
@@ -32,7 +31,7 @@ include:
   before_script:
     - mkdir --parents "$APK_CACHE_DIR"
     - apk add --cache-dir "$APK_CACHE_DIR" build-base clang compiler-rt git uv
-    - uv sync --project saltbox_bridge --python="$PYTHON" --extra dev --extra salt --no-sources
+    - uv sync --python="$PYTHON" --extra dev --extra salt --no-sources
     - source saltbox_bridge/.venv/bin/activate
   cache:
     paths:
@@ -42,12 +41,12 @@ include:
 
 Ruff:
   extends: .lint-job
-  script: 'ruff check saltbox_bridge --config $CONFIG_FILE_PATH'
+  script: 'ruff check saltbox_bridge'
 
 
 Mypy:
   extends: .lint-job
-  script: 'mypy saltbox_bridge --config-file $CONFIG_FILE_PATH'
+  script: 'mypy saltbox_bridge'
 
 
 Bump Salt Master version:

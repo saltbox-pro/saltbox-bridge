@@ -14,7 +14,7 @@ from saltbox_bridge.redis import get_sync_redis_client
 LOGGER = logging.getLogger(__name__)
 
 
-def __virtual__() -> bool:  # noqa: N807
+def __virtual__() -> bool:  # ruff: ignore[dunder-function-name]
     return True
 
 

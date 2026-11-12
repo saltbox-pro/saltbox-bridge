@@ -30,7 +30,7 @@ router_not_auth = RedisRouter()
 async def accept_keys(
     message: SaltKeysRequest,
     salt_master: str = Context(),
-    salt_connector: SaltConnector = Context(),  # noqa: B008
+    salt_connector: SaltConnector = Context(),  # ruff: ignore[function-call-in-default-argument]
 ) -> SaltKeysResponse:
     minions: list[str] = await salt_connector.salt_key_accept(minions_ids=message.minions)
 
@@ -46,7 +46,7 @@ async def accept_keys(
 async def accept_all_keys(
     message: CoreMessageBase,
     salt_master: str = Context(),
-    salt_connector: SaltConnector = Context(),  # noqa: B008
+    salt_connector: SaltConnector = Context(),  # ruff: ignore[function-call-in-default-argument]
 ) -> SaltKeysResponse:
     minions: list[str] = await salt_connector.salt_key_all_accept()
 
@@ -62,7 +62,7 @@ async def accept_all_keys(
 async def reject_keys(
     message: SaltKeysRequest,
     salt_master: str = Context(),
-    salt_connector: SaltConnector = Context(),  # noqa: B008
+    salt_connector: SaltConnector = Context(),  # ruff: ignore[function-call-in-default-argument]
 ) -> SaltKeysResponse:
     minions: list[str] = await salt_connector.salt_key_reject(minions_ids=message.minions)
 
@@ -78,7 +78,7 @@ async def reject_keys(
 async def reject_all_keys(
     message: CoreMessageBase,
     salt_master: str = Context(),
-    salt_connector: SaltConnector = Context(),  # noqa: B008
+    salt_connector: SaltConnector = Context(),  # ruff: ignore[function-call-in-default-argument]
 ) -> SaltKeysResponse:
     minions: list[str] = await salt_connector.salt_key_all_reject()
 
@@ -94,7 +94,7 @@ async def reject_all_keys(
 async def delete_keys(
     message: SaltKeysRequest,
     salt_master: str = Context(),
-    salt_connector: SaltConnector = Context(),  # noqa: B008
+    salt_connector: SaltConnector = Context(),  # ruff: ignore[function-call-in-default-argument]
 ) -> BridgeMessageBase:
     await salt_connector.salt_key_delete(minions_ids=message.minions)
 
@@ -105,7 +105,7 @@ async def delete_keys(
 async def delete_all_keys(
     message: CoreMessageBase,
     salt_master: str = Context(),
-    salt_connector: SaltConnector = Context(),  # noqa: B008
+    salt_connector: SaltConnector = Context(),  # ruff: ignore[function-call-in-default-argument]
 ) -> BridgeMessageBase:
     await salt_connector.salt_key_all_delete()
 
@@ -116,7 +116,7 @@ async def delete_all_keys(
 async def list_keys(
     message: SaltListKeysRequest,
     salt_master: str = Context(),
-    salt_connector: SaltConnector = Context(),  # noqa: B008
+    salt_connector: SaltConnector = Context(),  # ruff: ignore[function-call-in-default-argument]
 ) -> SaltListKeysResponse:
     salt_keys: dict = await salt_connector.get_salt_keys_list(status=message.status)
 

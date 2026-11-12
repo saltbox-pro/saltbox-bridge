@@ -21,6 +21,6 @@ router_not_auth = RedisRouter()
 @router.subscriber('update_pillar_cache')
 async def update_pillar_cache(
     message: CoreUpdatePillarCacheRequest,
-    salt_connector: SaltConnector = Context(),  # noqa: B008
+    salt_connector: SaltConnector = Context(),  # ruff: ignore[function-call-in-default-argument]
 ) -> Any:
     return await salt_connector.update_pillar_cache(tgt=message.tgt, tgt_type=message.tgt_type)

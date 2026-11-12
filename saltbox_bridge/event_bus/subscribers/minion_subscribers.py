@@ -28,7 +28,7 @@ router_not_auth = RedisRouter()
 async def gather_minions(
     message: CoreGatherMinionsRequest,
     salt_master: str = Context(),
-    salt_connector: SaltConnector = Context(),  # noqa: B008
+    salt_connector: SaltConnector = Context(),  # ruff: ignore[function-call-in-default-argument]
 ) -> BridgeGatherMinionsResponse:
     minions: list[str] = await salt_connector.gather_minions(tgt=message.tgt, tgt_type=message.tgt_type)
     minions_slice = minions[: SETTINGS.max_count_of_gather_minions]

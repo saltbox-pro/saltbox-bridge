@@ -41,8 +41,8 @@ __salt__: dict
 LOGGER = logging.getLogger(__name__)
 
 
-def __virtual__() -> bool | tuple[bool, str]:  # noqa: N807
-    if __opts__['__role'] != 'master':  # noqa: F821
+def __virtual__() -> bool | tuple[bool, str]:  # ruff: ignore[dunder-function-name]
+    if __opts__['__role'] != 'master':  # ruff: ignore[undefined-name]
         return False, f'{__name__} runs on master only'
     return True
 
@@ -53,4 +53,4 @@ def start() -> None:
     """
 
     LOGGER.info('Starting salt.box redis bridge as an engine')
-    start_delator(salt_opts=__opts__)  # noqa: F821
+    start_delator(salt_opts=__opts__)  # ruff: ignore[undefined-name]

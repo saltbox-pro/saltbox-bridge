@@ -35,7 +35,7 @@ router_not_auth = RedisRouter()
 @router.subscriber('sync_saltbox')
 async def sync_saltbox(
     message: CoreEmptyMessage,
-    salt_caller: SaltCaller = Context(),  # noqa: B008
+    salt_caller: SaltCaller = Context(),  # ruff: ignore[function-call-in-default-argument]
 ) -> None:
     await salt_caller.sync_saltbox()
 
@@ -43,7 +43,7 @@ async def sync_saltbox(
 @router.subscriber('sync_templates')
 async def sync_templates(
     message: CoreEmptyMessage,
-    salt_caller: SaltCaller = Context(),  # noqa: B008
+    salt_caller: SaltCaller = Context(),  # ruff: ignore[function-call-in-default-argument]
 ) -> BridgeSyncDoneMessage:
     return await salt_caller.sync_templates()
 
@@ -51,7 +51,7 @@ async def sync_templates(
 @router.subscriber('burst_test')
 async def burst_test(
     message: CoreTestBurstRequest,
-    core_connector: CoreConnector = Context(),  # noqa: B008
+    core_connector: CoreConnector = Context(),  # ruff: ignore[function-call-in-default-argument]
 ) -> BridgeTestBurstResponse:
     load = get_random_string(message.size)
     start = utc_now()
@@ -65,7 +65,7 @@ async def burst_test(
 @router.subscriber('burst_jobs_test')
 async def burst_jobs_test(
     message: CoreTestBurstJobsRequest,
-    redis_client: Redis = Context(),  # noqa: B008
+    redis_client: Redis = Context(),  # ruff: ignore[function-call-in-default-argument]
 ) -> None:
     gen = FakeJobNewEventGenerator()
     start = utc_now()
@@ -97,7 +97,7 @@ async def burst_jobs_test(
 @router.subscriber('ping')
 async def ping(
     message: CoreEmptyMessage,
-    salt_caller: SaltCaller = Context(),  # noqa: B008
+    salt_caller: SaltCaller = Context(),  # ruff: ignore[function-call-in-default-argument]
 ) -> BridgeSyncDoneMessage:
     logger.debug('Received ping message from master %s', message.master)
     return await salt_caller.ping()

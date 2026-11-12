@@ -83,7 +83,7 @@ LOCAL_GROUPS_MEMBERS_SEPARATOR = ','
 
 
 # Plain class because @dataclass may throw error on some Python versions because of Salt loader
-class Field:  # noqa: B903
+class Field:  # ruff: ignore[class-as-data-structure]
     def __init__(self, name: str, value: Any) -> None:
         self.name = name
         self.value = value

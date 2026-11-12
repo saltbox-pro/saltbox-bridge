@@ -21,6 +21,6 @@ def ensure_ssh_key(privkey_file: Path, key_type: KeyType = 'ed25519') -> None:
     cmd = ['ssh-keygen', '-t', key_type, '-N', '', '-f', str(privkey_file)]
 
     # TODO: Check if cmd is safe
-    subprocess.run(cmd, stdin=subprocess.DEVNULL, check=True)  # noqa: S603
+    subprocess.run(cmd, stdin=subprocess.DEVNULL, check=True)  # ruff: ignore[subprocess-without-shell-equals-true]
 
     LOGGER.info('SSH key generated: %s', privkey_file)

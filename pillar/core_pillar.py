@@ -8,9 +8,10 @@ from typing import Any
 
 from redis.exceptions import ConnectionError as RedisConnectionError
 from redis.exceptions import TimeoutError as RedisTimeoutError
+from saltbox_bridge_messages import BridgePillarDataRequest
+
 from saltbox_bridge.exceptions import CorePillarError
 from saltbox_bridge.utils.core_connector import CoreConnector
-from saltbox_bridge_messages import BridgePillarDataRequest
 
 # stub for static analyzers: __opts__ injected by salt loader at runtime
 __opts__: dict[str, Any] = {}
@@ -18,7 +19,7 @@ __opts__: dict[str, Any] = {}
 LOGGER = logging.getLogger(__name__)
 
 
-def __virtual__() -> bool | tuple[bool, str]:  # noqa: N807
+def __virtual__() -> bool | tuple[bool, str]:  # ruff: ignore[dunder-function-name]
     if __opts__['__role'] != 'master':
         return False, f'{__name__} runs on master only'
     return True

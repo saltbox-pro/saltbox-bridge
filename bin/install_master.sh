@@ -2,7 +2,7 @@
 
 # shellcheck disable=SC2016
 
-# Copyright 2026 Anton Karmanov, Daniil Konarev, Daniil Chistyakov 
+# Copyright 2026 Anton Karmanov, Daniil Konarev, Daniil Chistyakov
 
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -23,7 +23,7 @@ declare -r timestamp_template="+%Y-%m-%d %H:%M:%S"
 declare script_dir
 script_dir="$(dirname "${BASH_SOURCE[0]}")"
 
-declare -r bridge_dir="${script_dir}/saltbox-bridge"
+declare -r bridge_dir="${script_dir}"
 declare -r bridge_python_package_dir="${bridge_dir}/saltbox_bridge"
 
 declare -r crt_file_name="redis-ca.crt"
@@ -78,7 +78,7 @@ salt_box_master_id: %s
 EOF
 )"
 
-declare -r saltbox_conf_extra_tpl='redis_host: ${SALTBOX_IP} 
+declare -r saltbox_conf_extra_tpl='redis_host: ${SALTBOX_IP}
 redis_ssl_ca_certs: '"${salt_crt_destination}"'
 salt_conf_server: ${SALTBOX_IP}
 sshfs_server: ${SALTBOX_IP}'
@@ -200,9 +200,9 @@ messages[help,ru]='Установка и подключение сторонне
   --en_locale\t\tОтображать текст скрипта на английском языке
   --ru_locale\t\tОтображать текст скрипта на русском языке (по умолчанию)
   -h|--help\t\tВывести это сообщение
- 
+
 [ПРИМЕЧАНИЕ] Скрипт должен быть запущен от имени root.
- 
+
 Что делает скрипт:
 \t1. Устанавливает необходимые системные пакеты (curl, git, rsync, gettext и др.)
 \t2. Устанавливает Salt из официального APT-репозитория
@@ -556,7 +556,7 @@ function check_redis_crt() {
   local path="${1}"
   if [[ -f "${path}" ]]; then
     log "INFO" crt_found_success
-    
+
     local head_crt
     head_crt=$(head -n 1 "${path}")
 
@@ -627,14 +627,14 @@ function 02__setup_crt() {
     esac
   done
 
-  log "INFO" crt_install_start 
+  log "INFO" crt_install_start
 
   local crt_dirname
   crt_dirname=$(dirname "${salt_crt_destination}")
 
   mkdir_cmd=(mkdir -vp "${crt_dirname}")
   if ! run_indented "${mkdir_cmd[@]}"; then
-    log "ERROR" crt_install_failed 
+    log "ERROR" crt_install_failed
     exit 1
   fi
 
@@ -780,7 +780,7 @@ function add_gpg_keyring() {
 }
 
 function add_apt_source() {
-  
+
   local source_url="${1}"
   local source_destination_path="${2}"
   local package_name="${3}"
@@ -919,7 +919,7 @@ function 06__prepare_salt_dir() {
 }
 
 function clone_repository() {
-  
+
   local source_url="${1}"
   local destination="${2}"
   local repo_name="${3}"
@@ -1324,7 +1324,7 @@ function enable_system_service() {
 }
 
 function 11__enable_master_service() {
-  
+
   local service_name="salt-master"
   enable_system_service "${service_name}"
   log "INFO" master_service_started_success

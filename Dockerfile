@@ -104,7 +104,7 @@ EOF
 
 FROM uv AS extras
 WORKDIR /srv/saltbox-bridge/
-COPY saltbox_bridge/ /srv/saltbox-bridge/
+COPY . /srv/saltbox-bridge/
 ARG UV_CACHE_DIR=/root/.cache/uv/
 RUN --mount=type=cache,target="$UV_CACHE_DIR",id=uv \
   uv pip install \
@@ -121,7 +121,7 @@ COPY --from=extras "$SALT_EXTRAS_DIR" "$SALT_EXTRAS_DIR"
 
 FROM uv AS salt-master-dev
 ENV SALTBOX_BRIDGE_SRC_PATH=/mnt/saltbox-bridge/saltbox_bridge/
-COPY saltbox_bridge/ "$SALTBOX_BRIDGE_SRC_PATH"
+COPY ./ "$SALTBOX_BRIDGE_SRC_PATH"
 
 ENV SALTBOX_DEV_MODE=1
 VOLUME /mnt/saltbox-bridge-messages/

@@ -20,7 +20,7 @@ def get_random_bytes(size: int) -> bytes:
 
 
 def get_random_string(size: int) -> str:
-    return ''.join(random.choice(string.printable) for _ in range(size))  # noqa: S311
+    return ''.join(random.choice(string.printable) for _ in range(size))  # ruff: ignore[suspicious-non-cryptographic-random-usage]
 
 
 class SteadyRun:

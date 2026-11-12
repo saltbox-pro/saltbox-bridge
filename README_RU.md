@@ -282,5 +282,5 @@ sudo ./bin/install_evil.sh --en_locale
 ## Разработка
 
 ```bash
-uv sync --project saltbox_bridge --extra dev,salt
+uv sync --project saltbox_bridge
 ```
