@@ -1,3 +1,5 @@
+master_id: '${SALT_MASTER_ID}'  # Changing leads to Master keys rotation!
+
 module_dirs:
   - /srv/salt_extmod/
 file_roots:

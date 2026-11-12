@@ -24,7 +24,7 @@ REDIS_PASSWORD="$(cat "$REDIS_PASSWORD_FILE")"
 export REDIS_PASSWORD
 
 mkdir --parents /etc/salt/master.d/
-envsubst '$SALT_MASTER_LOG_LEVEL' \
+envsubst '$SALT_MASTER_ID' '$SALT_MASTER_LOG_LEVEL' \
   < /root/templates/master.conf.tpl \
   > /etc/salt/master.d/master.conf
 

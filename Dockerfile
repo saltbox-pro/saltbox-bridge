@@ -73,7 +73,7 @@ EOF
 RUN mkdir --parents /var/cache/salt/master/ /var/lib/saltbox-bridge/
 
 COPY --chmod=755 master/entrypoint.sh /usr/local/bin/
-COPY --chmod=644 master/config/master_id.conf /etc/salt/master.d/
+COPY --chmod=644 master/config/saltbox_master_id.conf /etc/salt/master.d/
 COPY --chmod=u=rwX,go=rX master/templates/ /root/templates/
 COPY --chmod=u=rwX,go=rX master/salt_master_local/ /srv/salt_master_local/
 COPY --chmod=u=rwX,go=rX master/salt_local/ /srv/salt_local/
@@ -81,6 +81,8 @@ COPY --chmod=u=rwX,go=rX engines /srv/salt_extmod/engines/
 COPY --chmod=u=rwX,go=rX runners /srv/salt_extmod/runners/
 COPY --chmod=u=rwX,go=rX pillar /srv/salt_extmod/pillar/
 
+# Changing of ID leads to key rotation!
+ENV SALT_MASTER_ID='salt-master'
 ENV REDIS_USERNAME=redis
 ENV REDIS_PASSWORD_FILE=
 ENV SALT_MASTER_LOG_LEVEL=warning
