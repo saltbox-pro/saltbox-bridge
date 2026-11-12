@@ -10,24 +10,40 @@ error() {
   exit 1
 }
 
-# Starting from 3008.5 Saltstack uses symlinks like master.pub -> MASTER_ID.pub
+_migrate_key() {(
+  path="$1"
+  dir="$(dirname "$path")"
+  suf="${path##*.}"
+  resolved=$(realpath -e "$path")
+  tgt="${dir}/${SALT_MASTER_ID}.${suf}"
+  if [ "$resolved" = "$tgt" ]; then
+    echo "Already OK: $tgt"
+    return
+  elif [ "$resolved" -ef "$tgt" ]; then
+    echo "Files are same: ${resolved} == ${tgt}"
+    return
+  fi
+  cp "$resolved" "$tgt"
+  ln -srf "$resolved" "$tgt"
+  echo "Migrated: ${resolved} -> ${tgt}"
+)}
+
+# Starting from 3008.5 Saltstack uses symlinks like master.pub -> MASTER_ID.pub.
+# Migration resolves $SALT_MASTER_ID changin and so on.
 migrate_keypair() {(
   keydir="$1"
   pub_path="${keydir}/master.pub"
   pem_path="${keydir}/master.pem"
   if [ ! -f "$pub_path" ] || [ ! -f "$pem_path" ]; then
-    echo "No master keypair to migrate"
+    echo "No Master keypair to migrate"
     return
   fi
-  pub_resolved=$(realpath -e "$pub_path")
-  pem_resolved=$(realpath -e "$pem_path")
-  cp "$pub_resolved" "${keydir}/${SALT_MASTER_ID}.pub"
-  echo "Migrated: $pub_resolved -> $pub_resolved"
-  cp "$pem_resolved" "${keydir}/${SALT_MASTER_ID}.pem"
-  echo "Migrated: $pem_resolved -> $pem_resolved"
+  _migrate_key "$pub_path"
+  _migrate_key "$pem_path"
 )}
 
-if [ "$SALTBOX_DEV_MODE" = 1 ]; then
+dev_mode="${SALTBOX_DEV_MODE:-0}"
+if [ "$dev_mode" = 1 ]; then
   chown -R "$(id -u):$(id -g)" "$SALTBOX_BRIDGE_SRC_PATH"
 
   uv --no-progress pip install --python="$SALT_PYTHON" --no-build-isolation --editable "$SALTBOX_BRIDGE_SRC_PATH"

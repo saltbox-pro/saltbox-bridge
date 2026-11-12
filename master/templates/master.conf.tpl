@@ -1,4 +1,4 @@
-master_id: '${SALT_MASTER_ID}'  # Changing may lead to key rotation!
+id: '${SALT_MASTER_ID}'  # Changing requiers old keys migration
 
 module_dirs:
   - /srv/salt_extmod/
