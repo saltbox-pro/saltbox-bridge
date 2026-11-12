@@ -32,13 +32,13 @@ ARG SALT_PATH_PREFIX='/opt'
 
 ENV SALT_PYTHON="${SALT_PATH_PREFIX}/salt/bin/python3"
 ENV SALT_EXTRAS_DIR="${SALT_PATH_PREFIX}/salt/extras"
-
-WORKDIR /root/cache
-SHELL ["/bin/bash", "-eo", "pipefail", "-c"]
+WORKDIR /root/
 
 RUN \
   --mount=type=cache,target=/root/cache/,sharing=locked \
 <<EOF
+set -eo pipefail
+cd /root/cache
 if [ ! -f "$_SALT_TARBALL_FILENAME" ];
   then curl -LOf "$_SALT_ONEDIR_URL";
 else
@@ -59,12 +59,14 @@ RUN \
 set -e
 mkdir --parents /var/cache/apt/archives/partial/ /var/lib/apt/lists/partial/
 apt-get update
-apt-get install --yes gettext=0.21-alt2 \
-                      git=2.50.1-alt1 \
-                      glibc-utils=2.38.0.223.f053ff-alt1.p11.1 \
-                      openssh-clients=9.6p1-alt7 \
-                      rsync=3.2.7-alt7 \
-                      gnupg=1.4.23-alt6
+apt-get install --yes \
+  gettext \
+  git \
+  glibc-utils \
+  gnupg \
+  openssh-clients \
+  rsync \
+;
 EOF
 
 #NOTE: To avoid error messag on cleanup keys
@@ -98,16 +100,16 @@ set -e
 mkdir --parents /var/cache/apt/archives/partial/ /var/lib/apt/lists/partial/
 apt-get update
 
-apt-get install --yes uv=0.10.7-alt1
+apt-get install --yes uv
 EOF
 
 
 FROM uv AS extras
-WORKDIR /srv/saltbox-bridge/
 COPY . /srv/saltbox-bridge/
 ARG UV_CACHE_DIR=/root/.cache/uv/
 RUN --mount=type=cache,target="$UV_CACHE_DIR",id=uv \
   uv pip install \
+    --directory /srv/saltbox-bridge/ \
     --python="$SALT_PYTHON" \
     --target="$SALT_EXTRAS_DIR" \
     --no-sources \
