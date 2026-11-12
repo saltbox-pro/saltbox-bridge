@@ -14,8 +14,8 @@ ARG BASE_IMG='registry.altlinux.org/alt/alt:p11'
 FROM "$BASE_IMG" AS salt-base
 
 RUN \
-  --mount=type=cache,target=/var/cache/apt,sharing=locked \
-  --mount=type=cache,target=/var/lib/apt/lists,sharing=locked \
+  --mount=type=cache,target=/var/cache/apt,sharing=locked,id=apt \
+  --mount=type=cache,target=/var/lib/apt/lists,sharing=locked,id=apt-lists \
 <<EOF
 set -e
 mkdir --parents /var/cache/apt/archives/partial/ /var/lib/apt/lists/partial/
@@ -35,7 +35,7 @@ ENV SALT_EXTRAS_DIR="${SALT_PATH_PREFIX}/salt/extras"
 WORKDIR /root/
 
 RUN \
-  --mount=type=cache,target=/root/cache/,sharing=locked \
+  --mount=type=cache,target=/root/cache/,sharing=locked,id=salt-tarball \
 <<EOF
 set -eo pipefail
 cd /root/cache
@@ -53,8 +53,8 @@ EOF
 
 FROM salt-base AS salt-master-base
 RUN \
-  --mount=type=cache,target=/var/cache/apt,sharing=locked \
-  --mount=type=cache,target=/var/lib/apt/lists,sharing=locked \
+  --mount=type=cache,target=/var/cache/apt,sharing=locked,id=apt \
+  --mount=type=cache,target=/var/lib/apt/lists,sharing=locked,id=apt-lists \
 <<EOF
 set -e
 mkdir --parents /var/cache/apt/archives/partial/ /var/lib/apt/lists/partial/
@@ -137,8 +137,8 @@ FROM salt-base AS salt-mock-minion
 LABEL name='saltbox-salt-minion'
 
 RUN \
-  --mount=type=cache,target=/var/cache/apt,sharing=locked \
-  --mount=type=cache,target=/var/lib/apt/lists,sharing=locked \
+  --mount=type=cache,target=/var/cache/apt,sharing=locked,id=apt \
+  --mount=type=cache,target=/var/lib/apt/lists,sharing=locked,id=apt-lists \
 <<EOF
 set -e
 mkdir --parents /var/cache/apt/archives/partial/ /var/lib/apt/lists/partial/
