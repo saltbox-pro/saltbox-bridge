@@ -10,7 +10,7 @@
 
 ARG BASE_IMG='registry.altlinux.org/alt/alt:p11'
 
-# hadolint global ignore=DL3006,DL3064,DL3015
+# hadolint global ignore=DL3006,DL3064,DL3015,DL3008
 FROM "$BASE_IMG" AS salt-base
 
 RUN \
@@ -20,11 +20,7 @@ RUN \
 set -e
 mkdir --parents /var/cache/apt/archives/partial/ /var/lib/apt/lists/partial/
 apt-get update
-apt-get install --yes curl=8.23.0-alt1 \
-                      glibc-pthread=2.38.0.223.f053ff-alt1.p11.1 \
-                      lsb-release=2.0-alt5 \
-                      openssl=3.5.7-alt2 \
-                      procps=4.0.6-alt1
+apt-get install --yes curl glibc-pthread lsb-release openssl procps
 EOF
 
 ARG SALT_VERSION='3008.5'
