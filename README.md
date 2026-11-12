@@ -272,5 +272,5 @@ During the run you will be asked to:
 ## Development
 
 ```bash
-uv sync --project saltbox_bridge
+uv sync
 ```
