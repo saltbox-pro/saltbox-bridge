@@ -19,5 +19,3 @@ repos:
     rev: 0.13.6
     hooks:
       - id: uv-lock
-        files: saltbox_bridge/pyproject.toml
-        args: [ '--directory=saltbox_bridge' ]
