@@ -2,7 +2,7 @@
 name = "saltbox-bridge"
 description = "salt.box connector to salt master, service module"
 readme = "README.md"
-requires-python = ">=3.10"
+requires-python = ">=3.10,<3.15"  # Nov 2026: pydantic-core fails to be built on 3.15
 license-files = ["LICENSE.txt"]
 classifiers = [
   "Topic :: System :: Systems Administration",
