@@ -123,7 +123,7 @@ COPY --from=extras "$SALT_EXTRAS_DIR" "$SALT_EXTRAS_DIR"
 
 
 FROM uv AS salt-master-dev
-ENV SALTBOX_BRIDGE_SRC_PATH=/mnt/saltbox-bridge/saltbox_bridge/
+ENV SALTBOX_BRIDGE_SRC_PATH=/mnt/saltbox-bridge/
 COPY ./ "$SALTBOX_BRIDGE_SRC_PATH"
 
 ENV SALTBOX_DEV_MODE=1
