@@ -61,7 +61,7 @@ class Settings(BaseSettings):
 
     # SSH server to obtain Salt.Box SLS files and modules
     salt_conf_server: str
-    salt_conf_port: int = 22
+    salt_conf_port: int = 1022
     salt_conf_user: str = 'master'
     salt_conf_source: Path = Path('/srv/master/salt/')
     salt_conf_destination: Path = Path('/srv/saltbox_salt/')
@@ -70,7 +70,7 @@ class Settings(BaseSettings):
     # SSHFS replication
     sshfs_sync_on: bool = True
     sshfs_server: str | None = None
-    sshfs_port: int = 22
+    sshfs_port: int = 1022
     sshfs_user: str = 'saltbox'
     sshfs_source: Path = Path('/srv/sshfs/')
     sshfs_destination: Path = Path('/srv/sshfs/')
