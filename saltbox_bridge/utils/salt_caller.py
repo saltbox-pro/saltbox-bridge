@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import logging
+from pathlib import Path
 from typing import Any
 
 from salt.client import Caller  # type: ignore
@@ -39,6 +40,34 @@ def get_state_apply_error(data: list[str] | dict[str, dict[str, Any]]) -> list[s
         raise SaltCallerTypeError(msg)
 
 
+def as_rsync_dir(path: Path) -> str:
+    return f'{path}/'
+
+
+def get_sync_pillar() -> dict[str, Any]:
+    return {
+        'ssh_dir': str(HIERARHY.ssh_dir),
+        'sshfs_sync_on': SETTINGS.sshfs_sync_on,
+        'sshfs_server': SETTINGS.sshfs_server,
+        'sshfs_port': SETTINGS.sshfs_port,
+        'sshfs_user': SETTINGS.sshfs_user,
+        'sshfs_privkey': str(HIERARHY.sshfs_privkey),
+        'sshfs_pubkey': str(HIERARHY.sshfs_pubkey),
+        'sshfs_source': as_rsync_dir(SETTINGS.sshfs_source),
+        'sshfs_destination': as_rsync_dir(SETTINGS.sshfs_destination),
+        'salt_conf_server': SETTINGS.salt_conf_server,
+        'salt_conf_port': SETTINGS.salt_conf_port,
+        'salt_conf_user': SETTINGS.salt_conf_user,
+        'salt_conf_privkey': str(HIERARHY.salt_conf_privkey),
+        'salt_conf_pubkey': str(HIERARHY.salt_conf_pubkey),
+        'salt_conf_source': as_rsync_dir(SETTINGS.salt_conf_source),
+        'salt_conf_destination': as_rsync_dir(SETTINGS.salt_conf_destination),
+        'salt_conf_custom_sync_on': SETTINGS.salt_conf_custom_sync_on,
+        'salt_conf_custom_source': as_rsync_dir(SETTINGS.salt_conf_custom_source),
+        'salt_conf_custom_destination': as_rsync_dir(SETTINGS.salt_conf_custom_destination),
+    }
+
+
 class SaltCaller:
     def __init__(self, core_connector: CoreConnector) -> None:
         self.core_connector = core_connector
@@ -51,22 +80,7 @@ class SaltCaller:
     async def sync_saltbox(self) -> None:
         state_name = 'sync_saltbox'
         logger.info('Starting %s', state_name)
-        pillar = {
-            'ssh_dir': str(HIERARHY.ssh_dir),
-            'sshfs_sync_on': SETTINGS.sshfs_sync_on,
-            'sshfs_server': SETTINGS.sshfs_server,
-            'sshfs_port': SETTINGS.sshfs_port,
-            'sshfs_user': SETTINGS.sshfs_user,
-            'sshfs_privkey': str(HIERARHY.sshfs_privkey),
-            'sshfs_pubkey': str(HIERARHY.sshfs_pubkey),
-            'salt_conf_server': SETTINGS.salt_conf_server,
-            'salt_conf_port': SETTINGS.salt_conf_port,
-            'salt_conf_user': SETTINGS.salt_conf_user,
-            'salt_conf_privkey': str(HIERARHY.salt_conf_privkey),
-            'salt_conf_pubkey': str(HIERARHY.salt_conf_pubkey),
-            'salt_conf_custom_sync_on': SETTINGS.salt_conf_custom_sync_on,
-        }
-        ret = self.caller.cmd('state.apply', state_name, pillar=pillar)
+        ret = self.caller.cmd('state.apply', state_name, pillar=get_sync_pillar())
         logger.info('Finished %s', state_name)
         if (errors := get_state_apply_error(ret)) is not None:
             for msg in errors:
@@ -82,22 +96,7 @@ class SaltCaller:
         """Temporary implementation of templates sync for new module realization"""
         state_name = 'sync_saltbox'
         logger.info('Starting %s', state_name)
-        pillar = {
-            'ssh_dir': str(HIERARHY.ssh_dir),
-            'sshfs_sync_on': SETTINGS.sshfs_sync_on,
-            'sshfs_server': SETTINGS.sshfs_server,
-            'sshfs_port': SETTINGS.sshfs_port,
-            'sshfs_user': SETTINGS.sshfs_user,
-            'sshfs_privkey': str(HIERARHY.sshfs_privkey),
-            'sshfs_pubkey': str(HIERARHY.sshfs_pubkey),
-            'salt_conf_server': SETTINGS.salt_conf_server,
-            'salt_conf_port': SETTINGS.salt_conf_port,
-            'salt_conf_user': SETTINGS.salt_conf_user,
-            'salt_conf_privkey': str(HIERARHY.salt_conf_privkey),
-            'salt_conf_pubkey': str(HIERARHY.salt_conf_pubkey),
-            'salt_conf_custom_sync_on': SETTINGS.salt_conf_custom_sync_on,
-        }
-        ret = self.caller.cmd('state.apply', state_name, pillar=pillar)
+        ret = self.caller.cmd('state.apply', state_name, pillar=get_sync_pillar())
         logger.info('Finished %s', state_name)
         if (errors := get_state_apply_error(ret)) is not None:
             for msg in errors:
