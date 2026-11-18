@@ -6,7 +6,7 @@ import sys
 from dataclasses import dataclass
 from pathlib import Path
 
-from pydantic import DirectoryPath
+from pydantic import DirectoryPath, model_validator
 from pydantic_settings import BaseSettings, PydanticBaseSettingsSource, SettingsConfigDict, YamlConfigSettingsSource
 
 from saltbox_bridge.utils.ssh import ensure_ssh_key
@@ -71,7 +71,7 @@ class Settings(BaseSettings):
     sshfs_sync_on: bool = True
     sshfs_server: str | None = None
     sshfs_port: int = 22
-    sshfs_user: str | None = None
+    sshfs_user: str = 'saltbox'
     sshfs_source: Path = Path('/srv/sshfs/')
     sshfs_destination: Path = Path('/srv/sshfs/')
 
@@ -96,6 +96,13 @@ class Settings(BaseSettings):
         file_secret_settings: PydanticBaseSettingsSource,
     ) -> tuple[PydanticBaseSettingsSource, ...]:
         return (YamlConfigSettingsSource(settings_cls),)
+
+    @model_validator(mode='after')
+    def check_sshfs_server(self) -> Settings:
+        if self.sshfs_sync_on and not self.sshfs_server:
+            msg = 'sshfs_server is required when sshfs_sync_on is enabled'
+            raise ValueError(msg)
+        return self
 
     @property
     def redis_protocol(self) -> str:
