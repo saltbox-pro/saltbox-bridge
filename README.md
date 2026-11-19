@@ -68,6 +68,10 @@ For a fully manual, step-by-step walkthrough of the same process see the
 
 ### Requirements
 
+- Debian/Ubuntu with APT, or ALT with Salt onedir RPMs. For a fresh ALT
+  installation, place the **3008.5** `salt`, `salt-master` and `salt-minion`
+  RPMs for your OS release and architecture in one directory and run
+  `sudo SALT_RPM_DIR=/path/to/rpms ./bin/install_master.sh`. Salt must provide Python 3.10–3.14
 - A host with network access to the SaltBox Redis instance by **IP address**,
   hostnames are not accepted by the script's prompts, and its port, `6379`
   by default
@@ -103,13 +107,10 @@ sudo ./bin/install_master.sh --en_locale
 
 ### What it does
 
-1. Installs the `redis-ca.crt` certificate, auto-detected next to the script
-   or at a path you provide, to `/etc/salt/ssl/redis-ca.crt`.
-2. Checks connectivity to the SaltBox Redis instance at the IP address and
-   port you provide
-3. Installs required system packages: `curl`, `git`, `rsync`, `gettext` and
-   others
-4. Installs Salt from the official APT repository
+1. Checks the platform and installs system dependencies.
+2. Installs Salt onedir and verifies its Python runtime.
+3. Installs the certificate at `/etc/salt/ssl/redis-ca.crt`.
+4. Checks connectivity to the selected Redis TCP port.
 5. Creates the [Salt files hierarchy](#salt-files-hierarchy) directories
 6. Clones or updates the [`saltbox-bridge`](https://dev.saltbox.pro/saltbox/saltbox-bridge)
    repository next to the script
@@ -136,19 +137,18 @@ During the run you will be asked to:
 - provide the Redis username, `redis` by default, and password used by the
   `saltbox` config
 
-> **NOTE:** If a local copy of `saltbox-bridge` already exists next to the
-> script, you will be asked whether to reuse it or re-clone. Re-cloning
-> **PERMANENTLY DELETES** the local copy, and you will be warned separately
-> if it has uncommitted changes
+Running from a checkout uses that working tree. A standalone script uses the
+`saltbox-bridge/` subdirectory next to it. Existing checkouts are updated
+with `git pull --ff-only`.
 
 ### Re-running the script
 
-**The script is safe to re-run**: package installation and directory creation are
-idempotent, and configs are fully re-rendered from the Bridge templates each
-time.
-
-Re-running is the **recommended** way to pick up updated Bridge templates
-or to change the master ID, log levels, or Redis credentials.
+The installer provisions a new master. Before installing packages it reports
+the OS and checks TCP ports 4505 and 4506 with `ss`, the `/etc/salt/master`
+config, the `salt-master` command and the `salt-master.service` unit.
+An occupied port or an existing master, including a stopped one, aborts
+installation. This also applies to rerunning the installer after a successful
+installation.
 
 ## Adopting an existing Salt Master
 

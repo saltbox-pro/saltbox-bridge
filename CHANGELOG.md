@@ -18,6 +18,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- External master installation now resolves the bridge checkout and package root,
+  stops on sync errors and supports local Salt onedir RPMs on ALT. Generated
+  configs use the selected Redis port, protect Redis credentials and enable
+  the sync directories required by an external master.
 - `core_pillar`: on Core response timeout log a warning and return the error
   in the `_errors` pillar key instead of raising, Salt no longer prints a
   traceback and a critical message for every minion while Core is starting.

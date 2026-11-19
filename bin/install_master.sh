@@ -20,19 +20,34 @@ set -eu -o pipefail
 
 declare -r timestamp_template="+%Y-%m-%d %H:%M:%S"
 
-declare script_dir
-script_dir="$(dirname "${BASH_SOURCE[0]}")"
+script_parent="$(dirname -- "${BASH_SOURCE[0]}")"
+script_dir="$(realpath -- "${script_parent}")"
 
-declare -r bridge_dir="${script_dir}"
-declare -r bridge_python_package_dir="${bridge_dir}/saltbox_bridge"
+if [[ -f "${script_dir}/../pyproject.toml" && -d "${script_dir}/../saltbox_bridge" ]]; then
+  bridge_dir="$(dirname -- "${script_dir}")"
+else
+  bridge_dir="${script_dir}/saltbox-bridge"
+fi
+readonly bridge_dir
 
 declare -r crt_file_name="redis-ca.crt"
-declare -r salt_crt_destination="/etc/salt/ssl/${crt_file_name}"
+declare -r salt_config_dir=/etc/salt
+declare -r bridge_templates_dir="${bridge_dir}/master/templates"
+declare -r config_renderer="${bridge_dir}/bin/render_external_master.py"
+declare -r salt_crt_destination="${salt_config_dir}/ssl/${crt_file_name}"
 
 declare -r correct_head_crt="-----BEGIN CERTIFICATE-----"
 declare -r correct_tail_crt="-----END CERTIFICATE-----"
 
+declare -ra alt_platform_ids=(altlinux alt)
+declare -ra deb_platform_ids=(debian ubuntu)
+declare -ra salt_rpm_names=(salt salt-master salt-minion)
+declare -r rpm_query_format='%{NAME} %{VERSION}'
 declare -r salt_version=3008.5
+declare -ra master_tcp_ports=(4505 4506)
+declare -r master_service=salt-master.service
+declare -r master_config="${salt_config_dir}/master"
+
 declare -r salt_pkgs=(
   "salt-common=${salt_version}"
   "salt-master=${salt_version}"
@@ -54,34 +69,14 @@ declare -r salt_sources_url=https://github.com/saltstack/salt-install-guide/rele
 declare -r gpg_salt_key_url=https://packages.broadcom.com/artifactory/api/security/keypair/SaltProjectKey/public
 declare -r saltbox_bridge_repo_url=https://dev.saltbox.pro/saltbox/saltbox-bridge.git
 
-declare -r dependencies=(curl gnupg git rsync netcat-openbsd gettext-base)
+declare -r salt_python="${salt_optional_path}/salt/bin/python3"
 
 declare -ri default_redis_port=6379
 declare -r ip_regex='^([0-9]{1,3}\.){3}[0-9]{1,3}$'
-declare -r port_regex='^[0-9]+$'
-
-declare -r master_conf_path=/etc/salt/master
-declare -r minion_conf_path=/etc/salt/minion
-declare -r saltbox_conf_path=/etc/salt/saltbox
-
-declare -r master_conf_tpl="${bridge_dir}/master/templates/master.conf.tpl"
-declare -r minion_conf_tpl="${bridge_dir}/master/templates/minion.conf.tpl"
-declare -r saltbox_conf_tpl="${bridge_dir}/master/templates/saltbox.conf.tpl"
+declare -r port_regex='^[1-9][0-9]{0,4}$'
 
 declare -r roster_path=/srv/roster/roster
 declare -r roster_tpl="${bridge_dir}/master/salt_master_local/files/roster"
-
-# shellcheck disable=SC2155
-declare -r master_conf_extra_tpl="$(cat <<'EOF'
-user: root
-salt_box_master_id: %s
-EOF
-)"
-
-declare -r saltbox_conf_extra_tpl='redis_host: ${SALTBOX_IP}
-redis_ssl_ca_certs: '"${salt_crt_destination}"'
-salt_conf_server: ${SALTBOX_IP}
-sshfs_server: ${SALTBOX_IP}'
 
 declare -r master_id_timestamp_format="+%Y%m%d-%H%M%S"
 
@@ -172,7 +167,7 @@ messages[crt_install_failed,ru]='Не удалось установить сер
 
 messages[help,en]='Install and connect a secondary Salt-Master to SaltBox.
 
-Usage: ./saltbox-master-install.sh [--en_locale|--ru_locale] [-h|--help]
+Usage: ./install_master.sh [--en_locale|--ru_locale] [-h|--help]
   --en_locale\t\tDisplay script text in English
   --ru_locale\t\tDisplay script text in Russian (default)
   -h|--help\t\tPrint this message
@@ -180,8 +175,8 @@ Usage: ./saltbox-master-install.sh [--en_locale|--ru_locale] [-h|--help]
 [NOTE] The script must be run as root.
 
 What it does:
-\t1. Installs required system packages (curl, git, rsync, gettext, etc.)
-\t2. Installs Salt from the official APT repository
+\t1. Installs required system packages (git, rsync, etc.)
+\t2. Installs Salt from the Salt APT repository on Debian or onedir RPMs on ALT
 \t3. Clones or updates the saltbox-bridge repository (https://dev.saltbox.pro/saltbox/saltbox-bridge)
 \t4. Syncs Bridge files into Salt directories and installs the Bridge python package
 \t5. Checks connectivity to the SaltBox Redis instance
@@ -196,7 +191,7 @@ During the run you will be asked to:
 '
 messages[help,ru]='Установка и подключение стороннего Salt-Master к SaltBox.
 
-Использование: ./saltbox-master-install.sh [--en_locale|--ru_locale] [-h|--help]
+Использование: ./install_master.sh [--en_locale|--ru_locale] [-h|--help]
   --en_locale\t\tОтображать текст скрипта на английском языке
   --ru_locale\t\tОтображать текст скрипта на русском языке (по умолчанию)
   -h|--help\t\tВывести это сообщение
@@ -204,8 +199,8 @@ messages[help,ru]='Установка и подключение сторонне
 [ПРИМЕЧАНИЕ] Скрипт должен быть запущен от имени root.
 
 Что делает скрипт:
-\t1. Устанавливает необходимые системные пакеты (curl, git, rsync, gettext и др.)
-\t2. Устанавливает Salt из официального APT-репозитория
+\t1. Устанавливает необходимые системные пакеты (git, rsync и др.)
+\t2. Устанавливает Salt из APT-репозитория Salt на Debian или из RPM onedir на ALT
 \t3. Клонирует или обновляет репозиторий saltbox-bridge (https://dev.saltbox.pro/saltbox/saltbox-bridge)
 \t4. Синхронизирует файлы Bridge в директории Salt и устанавливает python пакет Bridge сервиса
 \t5. Проверяет подключение к Redis-инстансу SaltBox
@@ -321,26 +316,8 @@ messages[saltbox_bridge_dev_switch_failed,ru]='Не удалось перекл�
 messages[prepare_salt_bridge,en]="Preparing SaltBox Bridge service..."
 messages[prepare_salt_bridge,ru]="Настройка SaltBox Bridge сервиса..."
 
-messages[use_local_bridge,en]='Use local saltbox-bridge repository? (y/n, default y): '
-messages[use_local_bridge,ru]='Использовать локальный saltbox-bridge репозиторий? (y/n, по умолчанию y): '
-
 messages[use_dev_branch,en]='Use dev branch? (y/n, default n): '
 messages[use_dev_branch,ru]='Использовать ветку dev? (y/n, по умолчанию n): '
-
-messages[bridge_has_uncommitted_changes,en]='The local saltbox-bridge has uncommitted changes!'
-messages[bridge_has_uncommitted_changes,ru]='В локальном saltbox-bridge есть незакоммиченные изменения!'
-
-messages[confirm_delete_bridge,en]='Confirm: delete and re-clone saltbox-bridge? (y/n, default n): '
-messages[confirm_delete_bridge,ru]='Подтвердите: удалить и заново клонировать saltbox-bridge? (y/n, по умолчанию n): '
-
-messages[bridge_delete_cancelled,en]='Deletion cancelled, using existing local copy'
-messages[bridge_delete_cancelled,ru]='Удаление отменено, используется существующая локальная копия'
-
-messages[bridge_will_be_deleted,en]='This will PERMANENTLY DELETE the local saltbox-bridge directory:'
-messages[bridge_will_be_deleted,ru]='Локальная директория saltbox-bridge будет БЕЗВОЗВРАТНО УДАЛЕНА'
-
-messages[confirm_delete_uncommitted,en]='Uncommitted changes will be lost. Delete anyway? (y/n, default n): '
-messages[confirm_delete_uncommitted,ru]='Незакоммиченные изменения будут потеряны. Удалить несмотря на это? (y/n, по умолчанию n): '
 
 messages[sync_bridge_files_start,en]='Syncing saltbox-bridge files...'
 messages[sync_bridge_files_start,ru]='Синхронизация файлов saltbox-bridge...'
@@ -482,6 +459,30 @@ messages[write_to_file_failed,ru]='Не удалось записать файл
 messages[repo_remove_failed,en]='Failed to remove existing directory for %s!'
 messages[repo_remove_failed,ru]='Не удалось удалить существующую директорию для %s!'
 
+messages[os_detected,en]='Detected operating system: %s'
+messages[os_detected,ru]='Обнаружена ОС: %s'
+
+messages[master_exists,en]='Salt Master already exists (%s). Installation stopped'
+messages[master_exists,ru]='Salt Master уже существует (%s). Установка остановлена'
+
+messages[port_busy,en]='TCP port %s is already in use. Installation stopped'
+messages[port_busy,ru]='TCP порт %s уже занят. Установка остановлена'
+
+messages[check_failed,en]='Unable to check %s. Installation stopped'
+messages[check_failed,ru]='Не удалось проверить %s. Установка остановлена'
+
+messages[rpm_missing,en]='Expected exactly one matching RPM in SALT_RPM_DIR: %s'
+messages[rpm_missing,ru]='В SALT_RPM_DIR нужен ровно один подходящий RPM: %s'
+
+messages[alt_runtime_required,en]='Provide Salt onedir %s RPMs in SALT_RPM_DIR'
+messages[alt_runtime_required,ru]='Укажите каталог RPM Salt onedir %s в SALT_RPM_DIR'
+
+messages[incompatible_runtime,en]='Salt onedir requires Python 3.10–3.14, pip and PyYAML'
+messages[incompatible_runtime,ru]='Для Salt onedir требуются Python 3.10–3.14, pip и PyYAML'
+
+messages[unsupported_platform,en]='Unsupported distribution: %s'
+messages[unsupported_platform,ru]='Неподдерживаемый дистрибутив: %s'
+salt_rpms=()
 LOCALE="ru"
 
 function display_help_msg() {
@@ -689,41 +690,126 @@ function display_framed() {
   printf "\t└%s\n" "${top_border}"
 }
 
-function apt_install() {
+function matches_platform() {
+  local -a system_ids
+  read -r -a system_ids <<< "${ID} ${ID_LIKE:-}"
 
-  local pkgs=("${@}")
-  local missing_pkgs=()
-  local pkgs_str
+  local supported_id system_id
+  for supported_id in "$@"; do
 
-  pkgs_str=$(printf ", %s" "${pkgs[@]}")
-  pkgs_str="${pkgs_str:2}"
+    for system_id in "${system_ids[@]}"; do
 
-  log "INFO" install_pkgs "${pkgs_str}"
+      if [[ "${system_id}" == "${supported_id}" ]]; then
+        return 0
+      fi
+    done
+  done
 
-  for pkg in "${pkgs[@]}"; do
-    if ! dpkg -s "${pkg}" &>/dev/null; then
-      missing_pkgs+=("${pkg}")
+  return 1
+}
+
+function collect_salt_rpms() {
+  local rpm_dir
+  rpm_dir="$(realpath -e -- "${SALT_RPM_DIR}")"
+
+  local pkg prefix expected_metadata file metadata
+  local -a candidates matches
+
+  for pkg in "${salt_rpm_names[@]}"; do
+    prefix="${rpm_dir}/${pkg}-${salt_version}"
+    candidates=("${prefix}"-*.rpm)
+    expected_metadata="${pkg} ${salt_version}"
+    matches=()
+
+    for file in "${candidates[@]}"; do
+
+      if [[ ! -f "${file}" ]]; then
+        continue
+      fi
+
+      if ! metadata="$(rpm -qp --queryformat "${rpm_query_format}" "${file}")"; then
+        continue
+      fi
+
+      if [[ "${metadata}" == "${expected_metadata}" ]]; then
+        matches+=("${file}")
+      fi
+    done
+
+    if [[ ${#matches[@]} != 1 ]]; then
+      log ERROR rpm_missing "${pkg}-${salt_version}"
+      return 1
+    fi
+
+    salt_rpms+=("${matches[0]}")
+  done
+}
+
+function detect_platform() {
+  # shellcheck disable=SC1091
+  source /etc/os-release
+  log INFO os_detected "${PRETTY_NAME:-${ID}}"
+
+  if matches_platform "${alt_platform_ids[@]}"; then
+    platform=alt
+
+  elif matches_platform "${deb_platform_ids[@]}"; then
+    platform=deb
+
+  else
+    log ERROR unsupported_platform "${ID}"
+    return 1
+  fi
+}
+
+function check_master_conflicts() {
+  local port listeners
+
+  for port in "${master_tcp_ports[@]}"; do
+    if ! listeners="$(ss -H -lnt "sport = :${port}")"; then
+      log ERROR check_failed "TCP/${port} (ss)"
+      return 1
+    fi
+
+    if [[ -n "${listeners}" ]]; then
+      log ERROR port_busy "${port}"
+      return 1
     fi
   done
 
-  if ! run_indented apt-get update ; then
-    log "ERROR" install_pkgs_failed
+  if [[ -e "${master_config}" ]]; then
+    log ERROR master_exists "${master_config}"
+    return 1
   fi
 
-  local apt_cmd
-  apt_cmd=(apt-get install -y --no-install-recommends -V --show-progress "${missing_pkgs[@]}")
+  local master_binary
+  if master_binary="$(command -v salt-master)"; then
+    log ERROR master_exists "${master_binary}"
+    return 1
+  fi
 
-  if ! run_indented "${apt_cmd[@]}" ; then
-    log "ERROR" install_pkgs_failed
-    exit 1
-  else
-    log "INFO" install_pkgs_success
+  local unit_state
+  if ! unit_state="$(systemctl show --property=LoadState --value "${master_service}")"; then
+    if [[ "${unit_state}" != not-found ]]; then
+      log ERROR check_failed "${master_service} (systemctl)"
+      return 1
+    fi
+  fi
+
+  if [[ "${unit_state}" != not-found ]]; then
+    log ERROR master_exists "${master_service}"
+    return 1
   fi
 }
 
 function 04__install_deps() {
-  log "INFO" install_salt_deps
-  apt_install "${dependencies[@]}"
+  log INFO install_salt_deps
+  run_indented apt-get update
+  if [[ "${platform}" == alt ]]; then
+    run_indented apt-get install -y git-core rsync
+  else
+    run_indented apt-get install -y --no-install-recommends curl gnupg git rsync
+  fi
 }
 
 function write_to_file() {
@@ -794,17 +880,47 @@ function add_apt_source() {
   log "INFO" apt_sources_install_success "${package_name}"
 }
 
+function check_salt_python() {
+  "${salt_python}" - <<'PYTHON'
+import sys
+
+import salt
+import yaml
+
+version = sys.version_info[:2]
+if not (3, 10) <= version < (3, 15):
+    sys.exit(1)
+PYTHON
+}
+
 function 05__install_salt() {
 
   local package_name="Salt"
 
   log "INFO" install_salt
 
-  add_gpg_keyring "${gpg_salt_key_url}" "${salt_keyring_path}" "${package_name}"
-  add_apt_source "${salt_sources_url}" "${salt_apt_sources_path}" "${package_name}"
+  if [[ "${platform}" == alt ]]; then
+    if (( ${#salt_rpms[@]} )); then
+      run_indented apt-get install -y "${salt_rpms[@]}"
+    fi
+  else
+    add_gpg_keyring "${gpg_salt_key_url}" "${salt_keyring_path}" "${package_name}"
+    add_apt_source "${salt_sources_url}" "${salt_apt_sources_path}" "${package_name}"
 
-  pin_apt_version "${salt_pkg_pin_content}" "${salt_pkg_pin_path}" "${package_name}"
-  apt_install "${salt_pkgs[@]}"
+    pin_apt_version "${salt_pkg_pin_content}" "${salt_pkg_pin_path}" "${package_name}"
+    run_indented apt-get update
+    run_indented apt-get install -y --no-install-recommends "${salt_pkgs[@]}"
+  fi
+
+  if [[ ! -x "${salt_pip_binary_path}" ]]; then
+    log ERROR incompatible_runtime
+    return 1
+  fi
+
+  if ! check_salt_python; then
+    log ERROR incompatible_runtime
+    return 1
+  fi
 
   log "INFO" install_salt_success
 }
@@ -827,7 +943,7 @@ function is_valid_ip() {
 
   local octet
   for octet in ${ip//./ }; do
-    if (( octet > 255 )); then
+    if (( 10#${octet} > 255 )); then
       return 1
     fi
   done
@@ -865,6 +981,21 @@ function get_validated_input() {
   printf "%s" "${value}"
 }
 
+function check_tcp_connection() {
+  local host="${1}"
+  local port="${2}"
+
+  "${salt_python}" - "${host}" "${port}" <<'PYTHON'
+import socket
+import sys
+
+host, port = sys.argv[1:]
+address = (host, int(port))
+with socket.create_connection(address, timeout=5):
+    pass
+PYTHON
+}
+
 function 03__check_redis_connection() {
 
   local saltbox_ip
@@ -882,13 +1013,11 @@ function 03__check_redis_connection() {
 
   log "INFO" check_redis_connection
 
-  local netcat_cmd
-  netcat_cmd=(nc -vz "${saltbox_ip}" "${saltbox_redis_port}")
-
-  if ! run_indented "${netcat_cmd[@]}"; then
+  if ! run_indented check_tcp_connection "${saltbox_ip}" "${saltbox_redis_port}"; then
     log "ERROR" check_redis_connection_failed
     exit 1
   fi
+  export REDIS_PORT="${saltbox_redis_port}"
   export SALTBOX_IP="${saltbox_ip}"
   log "INFO" check_redis_connection_success
 }
@@ -924,16 +1053,6 @@ function clone_repository() {
   local destination="${2}"
   local repo_name="${3}"
 
-  if [[ -d "${destination}" ]]; then
-    local remove_cmd
-    remove_cmd=(rm -rvf "${destination}")
-
-    if ! run_indented "${remove_cmd[@]}"; then
-      log "ERROR" repo_remove_failed "${repo_name}"
-      exit 1
-    fi
-  fi
-
   log "INFO" repo_cloning "${repo_name}"
 
   local git_clone_cmd
@@ -949,11 +1068,13 @@ function clone_repository() {
 function update_saltbox_bridge() {
   local dir="${1}"
 
-  if [[ -d "${dir}/.git" ]]; then
+  local bridge_git_dir="${dir}/.git"
+
+  if [[ -e "${bridge_git_dir}" ]]; then
     log "INFO" saltbox_bridge_updating
 
     local git_pull_cmd
-    git_pull_cmd=(git -C "${dir}" pull)
+    git_pull_cmd=(git -C "${dir}" pull --ff-only)
 
     if ! run_indented "${git_pull_cmd[@]}"; then
       log "WARN" saltbox_bridge_update_failed
@@ -976,91 +1097,22 @@ function switch_dev_branch_if_requested() {
     git_switch_cmd=(git -C "${dir}" switch dev)
 
     if ! run_indented "${git_switch_cmd[@]}"; then
-      log "WARN" saltbox_bridge_dev_switch_failed
-    fi
-  fi
-}
-
-function bridge_has_uncommitted_changes() {
-  local dir="${1}"
-
-  if [[ -d "${dir}/.git" ]]; then
-    local unstaged_status
-    local staged_status
-
-    if git -C "${dir}" diff --quiet 2>/dev/null; then
-      unstaged_status=0
-    else
-      unstaged_status=1
-    fi
-
-    if git -C "${dir}" diff --cached --quiet 2>/dev/null; then
-      staged_status=0
-    else
-      staged_status=1
-    fi
-
-    if [[ "${unstaged_status}" == "1" ]] ||
-       [[ "${staged_status}" == "1" ]]; then
-      return 0
-    else
+      log "ERROR" saltbox_bridge_dev_switch_failed
       return 1
     fi
-  else
-    return 1
-  fi
-}
-
-function confirm_delete_local_bridge() {
-  local dir="${1}"
-  local confirm
-  local confirm_prompt
-
-  log "WARN" bridge_will_be_deleted
-
-  if bridge_has_uncommitted_changes "${dir}"; then
-    log "WARN" bridge_has_uncommitted_changes
-    confirm_prompt="$(log "WARN" confirm_delete_uncommitted)"
-  else
-    confirm_prompt="$(log "WARN" confirm_delete_bridge)"
-  fi
-
-  read -rp "${confirm_prompt}" confirm
-  confirm="${confirm:-n}"
-
-  if [[ "${confirm}" == "y" ]]; then
-    return 0
-  else
-    return 1
   fi
 }
 
 function 07__prepare_saltbox_bridge() {
-
-  local repo_name="SaltBox Bridge"
-  local use_local
-  local prompt
-
-  log "INFO" prepare_salt_bridge
-
-  if [[ -d "${bridge_dir}" ]]; then
-
-    prompt="$(log "INFO" use_local_bridge)"
-    read -rp "${prompt}" use_local
-    use_local="${use_local:-y}"
-
-    if [[ "${use_local}" != "y" ]]; then
-      if confirm_delete_local_bridge "${bridge_dir}"; then
-        clone_repository "${saltbox_bridge_repo_url}" "${bridge_dir}" "${repo_name}"
-      else
-        log "INFO" bridge_delete_cancelled
-      fi
-    fi
-  else
-    clone_repository "${saltbox_bridge_repo_url}" "${bridge_dir}" "${repo_name}"
+  if [[ ! -e "${bridge_dir}" ]]; then
+    clone_repository "${saltbox_bridge_repo_url}" "${bridge_dir}" "SaltBox Bridge"
   fi
-  update_saltbox_bridge "${bridge_dir}"
+  if [[ ! -f "${bridge_dir}/pyproject.toml" || ! -d "${bridge_dir}/saltbox_bridge" ]]; then
+    log ERROR bridge_not_python_package "${bridge_dir}"
+    return 1
+  fi
   switch_dev_branch_if_requested "${bridge_dir}"
+  update_saltbox_bridge "${bridge_dir}"
 }
 
 function 08__sync_bridge_files() {
@@ -1087,6 +1139,7 @@ function 08__sync_bridge_files() {
 
     if ! run_indented "${rsync_cmd[@]}"; then
       log "ERROR" sync_bridge_files_failed "${source}"
+      return 1
     fi
   done
 
@@ -1096,6 +1149,7 @@ function 08__sync_bridge_files() {
 
     if ! run_indented "${cp_cmd[@]}"; then
       log "ERROR" roster_default_failed "${roster_path}"
+      return 1
     fi
   fi
   log "INFO" sync_bridge_files_success
@@ -1105,13 +1159,13 @@ function 09__install_bridge() {
 
   log "INFO" install_bridge_start
 
-  if [[ ! -d "${bridge_python_package_dir}" ]]; then
-    log "ERROR" bridge_dir_not_found "${bridge_python_package_dir}"
+  if [[ ! -d "${bridge_dir}" ]]; then
+    log "ERROR" bridge_dir_not_found "${bridge_dir}"
     exit 1
   fi
 
-  if [[ ! -f "${bridge_python_package_dir}/pyproject.toml" ]]; then
-    log "ERROR" bridge_not_python_package "${bridge_python_package_dir}"
+  if [[ ! -f "${bridge_dir}/pyproject.toml" ]]; then
+    log "ERROR" bridge_not_python_package "${bridge_dir}"
     exit 1
   fi
 
@@ -1121,40 +1175,13 @@ function 09__install_bridge() {
   fi
 
   local pip_cmd
-  pip_cmd=("${salt_pip_binary_path}" install "${bridge_python_package_dir}" --upgrade)
+  pip_cmd=("${salt_pip_binary_path}" install "${bridge_dir}" --upgrade)
 
   if ! run_indented "${pip_cmd[@]}"; then
     log "ERROR" install_bridge_failed
     exit 1
   fi
   log "INFO" install_bridge_success
-}
-
-function render_config_template() {
-
-  local template_path="${1}"
-  local destination_path="${2}"
-  local extra_content="${3:-}"
-
-  if [[ ! -f "${template_path}" ]]; then
-    log "ERROR" config_template_not_found "${template_path}"
-    exit 1
-  fi
-
-  local rendered_content
-  if ! rendered_content=$(envsubst < "${template_path}"); then
-    log "ERROR" config_render_failed "${template_path}"
-    exit 1
-  fi
-
-  local extended_content="${rendered_content}"
-  if [[ -n "${extra_content}" ]]; then
-    extended_content="${extended_content}"$'\n'"${extra_content}"
-  fi
-  printf "%s" "${extended_content}" > "${destination_path}"
-
-  log "INFO" config_written_to "${destination_path}"
-  display_framed "${extended_content}"
 }
 
 # NOTE: https://docs.saltproject.io/en/latest/ref/configuration/logging/index.html
@@ -1248,20 +1275,6 @@ function 10__setup_configs() {
     "${default_entity_log_lvl}" \
     "${salt_log_lvl_map[@]}")
 
-  export SALT_MASTER_LOG_LEVEL="${master_log_lvl}"
-  export SALT_MINION_LOG_LEVEL="${minion_log_lvl}"
-
-  log "INFO" master_conf_setup_start
-
-  # shellcheck disable=SC2059
-  printf -v master_conf_extra "${master_conf_extra_tpl}" "${master_id}"
-  render_config_template "${master_conf_tpl}" "${master_conf_path}" "${master_conf_extra}"
-
-  log "INFO" minion_conf_setup_start
-  render_config_template "${minion_conf_tpl}" "${minion_conf_path}"
-
-  log "INFO" saltbox_conf_setup_start
-
   local redis_user_prompt
   redis_user_prompt="$(log "INFO" specify_redis_user "${default_redis_user}")"
 
@@ -1281,12 +1294,23 @@ function 10__setup_configs() {
     log "WARN" empty_value
   done
 
-  export REDIS_USERNAME="${redis_user}"
-  export REDIS_PASSWORD="${redis_pwd}" # TODO: check Redis connection using username and password
+  (
+    export SALT_MASTER_ID="${master_id}"
+    export SALT_MASTER_LOG_LEVEL="${master_log_lvl}"
+    export SALT_MINION_LOG_LEVEL="${minion_log_lvl}"
+    export REDIS_USERNAME="${redis_user}"
+    export REDIS_PASSWORD="${redis_pwd}"
 
-  local saltbox_conf_extra
-  saltbox_conf_extra=$(envsubst <<< "${saltbox_conf_extra_tpl}")
-  render_config_template "${saltbox_conf_tpl}" "${saltbox_conf_path}" "${saltbox_conf_extra}"
+    render_cmd=(
+      "${salt_python}"
+      "${config_renderer}"
+      "${bridge_templates_dir}"
+      "${salt_crt_destination}"
+      "${salt_config_dir}"
+    )
+
+    "${render_cmd[@]}"
+  )
 
   log "INFO" setup_configs_success
 }
@@ -1343,10 +1367,21 @@ function 11__enable_master_service() {
 function compleate_stages() {
   00__is_root
   01__display_tittle
-  02__setup_crt
-  03__check_redis_connection
+  detect_platform
+  check_master_conflicts
+
+  if [[ "${platform}" == alt ]]; then
+    if [[ -z "${SALT_RPM_DIR:-}" ]]; then
+      log ERROR alt_runtime_required "${salt_version}"
+      return 1
+    fi
+
+    collect_salt_rpms
+  fi
   04__install_deps
   05__install_salt
+  02__setup_crt
+  03__check_redis_connection
   06__prepare_salt_dir
   07__prepare_saltbox_bridge
   08__sync_bridge_files
